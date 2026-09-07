@@ -233,8 +233,22 @@
                                     </p>
                                 </div>
 
+                                <!-- Jabatan Pegawai -->
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                        Jabatan <span class="text-error">*</span>
+                                    </label>
+                                    <select id="select-level" required onchange="handleLevelChange()"
+                                        class="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm font-medium text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                                        <option value="STAF">Staf / Pelaksana</option>
+                                        <option value="KASIE">Kepala Seksi</option>
+                                        <option value="KABAG">Kepala Bagian / Kepala Wilayah</option>
+                                    </select>
+                                </div>
+
                                 <!-- Nama Pegawai -->
-                                <div class="md:col-span-2">
+                                <div>
                                     <label
                                         class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
                                         Nama Lengkap & Gelar <span class="text-error">*</span>
@@ -271,13 +285,13 @@
                                     </select>
                                 </div>
 
-                                <!-- Seksi / Jabatan (Cascading Dropdown) -->
+                                <!-- Seksi (Cascading Dropdown) -->
                                 <div>
                                     <label
                                         class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
                                         Seksi <span class="text-error">*</span>
                                     </label>
-                                    <select id="select-seksi" required
+                                    <select id="select-seksi" required onchange="handleSeksiChange()"
                                         class="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
                                         <option value="">-- Pilih Unit Kerja Terlebih Dahulu --</option>
                                     </select>
@@ -526,7 +540,7 @@
                                     <tr>
                                         <th class="py-3.5 px-4">Hari / Tanggal</th>
                                         <th class="py-3.5 px-4">Pegawai</th>
-                                        <th class="py-3.5 px-4">Unit Kerja & Seksi</th>
+                                        <th class="py-3.5 px-4">Unit Kerja & Seksi / Jabatan</th>
                                         <th class="py-3.5 px-4 text-center">Foto Bukti</th>
                                         <th class="py-3.5 px-4 text-right">Aksi</th>
                                     </tr>
@@ -603,14 +617,17 @@
                         <td class="py-1 font-bold">Jabatan</td>
                         <td class="py-1">:</td>
                         <td class="py-1" id="print-jabatan">-</td>
-                        <td class="py-1 font-bold">Direktur Umum</td>
+                        <td class="py-1 font-bold">Pimpinan</td>
                         <td class="py-1">:</td>
                         <td class="py-1" id="print-direktur">Direktur Umum</td>
                     </tr>
                     <tr>
                         <td class="py-1 font-bold">Unit Kerja</td>
                         <td class="py-1">:</td>
-                        <td colspan="4" class="py-1 font-semibold" id="print-unit">-</td>
+                        <td class="py-1" id="print-unit">-</td>
+                        <td class="py-1 font-bold">Seksi</td>
+                        <td class="py-1">:</td>
+                        <td class="py-1" id="print-seksi">-</td>
                     </tr>
                 </table>
 
@@ -1066,6 +1083,7 @@
                     setTimeout(() => {
                         const selectSeksi = document.getElementById('select-seksi');
                         if (selectSeksi) selectSeksi.value = p.seksi;
+                        updateAtasanLangsung();
                     }, 50);
                 }
 
@@ -1087,28 +1105,54 @@
         function handleUnitChange() {
             const unit = document.getElementById('select-unit').value;
             const selectSeksi = document.getElementById('select-seksi');
-            const inputAtasan = document.getElementById('input-atasan');
             selectSeksi.innerHTML = '';
-
-            // Otomatisasi Atasan Langsung sesuai aturan unit kerja
-            if (inputAtasan) {
-                inputAtasan.value = unit ? (ATASAN_MAP[unit] || ('Kepala Bagian ' + unit)) : '-- Pilih Unit Kerja Terlebih Dahulu --';
-            }
 
             const orgData = window.ORGANISASI_DATA || MASTER_ORGANISASI;
 
             if (!unit || !orgData || !orgData[unit]) {
                 selectSeksi.innerHTML = '<option value="">-- Pilih Unit Kerja Terlebih Dahulu --</option>';
+                updateAtasanLangsung();
                 return;
             }
 
-            selectSeksi.innerHTML = '<option value="">-- Pilih Seksi / Jabatan --</option>';
+            selectSeksi.innerHTML = '<option value="">-- Pilih Seksi --</option>';
             orgData[unit].forEach(seksi => {
                 const opt = document.createElement('option');
                 opt.value = seksi;
                 opt.innerText = seksi;
                 selectSeksi.appendChild(opt);
             });
+
+            updateAtasanLangsung();
+        }
+
+        function handleSeksiChange() {
+            updateAtasanLangsung();
+        }
+
+        function handleLevelChange() {
+            updateAtasanLangsung();
+        }
+
+        function updateAtasanLangsung() {
+            const levelEl = document.getElementById('select-level');
+            const level = levelEl ? levelEl.value : 'STAF';
+            const unit = document.getElementById('select-unit') ? document.getElementById('select-unit').value : '';
+            const inputAtasan = document.getElementById('input-atasan');
+
+            if (!inputAtasan) return;
+
+            if (!unit) {
+                inputAtasan.value = '-- Pilih Unit Kerja Terlebih Dahulu --';
+                return;
+            }
+
+            if (level === 'KABAG') {
+                inputAtasan.value = 'Direksi';
+            } else {
+                // Untuk STAF dan KASIE -> Atasan Langsung adalah Kepala Bagian / Kepala Wilayah
+                inputAtasan.value = ATASAN_MAP[unit] || ('Kepala Bagian ' + unit);
+            }
         }
 
         // Render Baris Sesi Jam Kegiatan
@@ -1313,10 +1357,20 @@
                 return;
             }
 
+            const levelVal = document.getElementById('select-level') ? document.getElementById('select-level').value : 'STAF';
+            const levelMap = {
+                'STAF': 'Staf / Pelaksana',
+                'KASIE': 'Kepala Seksi',
+                'KABAG': 'Kepala Bagian / Kepala Wilayah'
+            };
+            const jabatanLabel = levelMap[levelVal] || 'Staf / Pelaksana';
+
             const payload = {
                 hariTanggal: hariTanggalStr,
                 nama: namaVal,
                 npp: nppVal,
+                level: levelVal,
+                jabatan: jabatanLabel,
                 unitKerja: unitVal,
                 seksi: seksiVal,
                 atasanLangsung: atasanVal,
@@ -1751,7 +1805,7 @@
                     </td>
                     <td class="py-3.5 px-4">
                         <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary mb-1">${item.unitKerja}</span>
-                        <p class="text-xs text-secondary font-medium">${item.seksi}</p>
+                        <p class="text-xs text-secondary font-medium">${item.seksi}${item.jabatan ? ' • ' + item.jabatan : ''}</p>
                     </td>
                     <td class="py-3.5 px-4 text-center">
                         ${fotoPreview}
@@ -1803,10 +1857,11 @@
             // Isi Elemen Header Dokumen
             document.getElementById('print-nama').innerText = data.nama;
             document.getElementById('print-npp').innerText = data.npp;
-            document.getElementById('print-jabatan').innerText = data.seksi;
+            document.getElementById('print-jabatan').innerText = data.jabatan || 'Staf / Pelaksana';
             document.getElementById('print-unit').innerText = data.unitKerja;
+            document.getElementById('print-seksi').innerText = data.seksi;
             document.getElementById('print-tanggal').innerText = data.hariTanggal;
-            document.getElementById('print-atasan').innerText = data.atasanLangsung || 'Sekretaris Direktur Umum';
+            document.getElementById('print-atasan').innerText = data.atasanLangsung || 'Direksi';
             document.getElementById('print-direktur').innerText = data.direkturUmum || 'Direktur Umum';
 
             // Isi Rincian Kegiatan
@@ -1929,7 +1984,6 @@
 </body>
 
 </html>
-
 
 </body>
 </html>
