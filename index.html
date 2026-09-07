@@ -1,32 +1,1933 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Laporan Kegiatan Harian - PERUMDA Air Minum Kota Makassar</title>
-    <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            background-color: #F4F6F9;
+    <meta name="description"
+        content="Aplikasi Laporan Kegiatan Harian Pegawai PERUMDA Air Minum Kota Makassar berbasis Google Apps Script Web App.">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        'primary-hover': '#0E4BD9',
+                        foreground: '#080C1A',
+                        secondary: '#6A7686',
+                        muted: '#F4F6F9',
+                        border: '#E5E9F0',
+                        'card-grey': '#F8FAFC',
+                        success: '#10B981',
+                        'success-light': '#D1FAE5',
+                        warning: '#F59E0B',
+                        'warning-light': '#FEF3C7',
+                        'warning-dark': '#B45309',
+                        error: '#EF4444',
+                        'error-light': '#FEE2E2',
+                    },
+                    fontFamily: {
+                        sans: ['"Lexend Deca"', 'sans-serif'],
+                    }
+                }
+            }
         }
-        /* Memotong banner Google Apps Script setinggi 50px ke atas */
-        iframe {
-            position: absolute;
-            top: -50px;
-            left: 0;
-            width: 100%;
-            height: calc(100% + 50px);
-            border: none;
+    </script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Media Print Khusus untuk Format Resmi form.docx */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #print-container,
+            #print-container * {
+                visibility: visible;
+            }
+
+            #print-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 15mm !important;
+                background: white !important;
+                color: black !important;
+                font-family: Arial, Helvetica, sans-serif !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+
+            .no-print {
+                display: none !important;
+            }
         }
     </style>
 </head>
-<body>
-    <iframe src="https://script.google.com/macros/s/AKfycbwAgzefSjoYnIHcbYdBYZabW8CvTEiyOOnswVmqV2UDhmhlqzrqIX2AdWa1tD_LE_KW/exec"></iframe>
+
+<body class="font-sans bg-muted text-foreground min-h-screen overflow-x-hidden antialiased">
+
+    <!-- Mobile Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-40 lg:hidden hidden" onclick="toggleSidebar()"></div>
+
+    <div class="flex h-screen max-h-screen flex-1 overflow-hidden">
+        <!-- SIDEBAR -->
+        <aside id="sidebar"
+            class="flex flex-col w-[280px] shrink-0 h-screen fixed inset-y-0 left-0 z-50 bg-white border-r border-border transform -translate-x-full lg:translate-x-0 transition-transform duration-300 overflow-hidden shadow-sm">
+            <!-- Top Bar / Logo -->
+            <div class="flex items-center justify-between border-b border-border h-[86px] px-5 gap-3">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-bold text-lg">
+                        <i data-lucide="droplet" class="w-6 h-6 text-primary"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="font-bold text-base leading-tight text-foreground">PERUMDA</h1>
+                        <p class="text-xs text-secondary font-medium tracking-wide">Air Minum Kota Makassar</p>
+                    </div>
+                </div>
+                <button onclick="toggleSidebar()" aria-label="Tutup menu"
+                    class="lg:hidden size-9 flex shrink-0 bg-muted rounded-lg items-center justify-center hover:text-primary transition-colors">
+                    <i data-lucide="x" class="size-5 text-secondary"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Links -->
+            <div class="flex flex-col p-4 gap-6 overflow-y-auto flex-1">
+                <div class="flex flex-col gap-2">
+                    <span class="text-[11px] font-semibold text-secondary uppercase tracking-wider px-3">Menu
+                        Utama</span>
+
+                    <button onclick="switchView('form')" id="nav-form"
+                        class="nav-item flex items-center w-full rounded-xl px-4 py-3 gap-3 bg-primary/10 text-primary font-semibold transition-all duration-200">
+                        <i data-lucide="file-plus" class="size-5 shrink-0"></i>
+                        <span class="text-sm">Input Laporan Harian</span>
+                    </button>
+
+                    <button onclick="switchView('dashboard')" id="nav-dashboard"
+                        class="nav-item flex items-center w-full rounded-xl px-4 py-3 gap-3 text-secondary hover:bg-muted font-medium transition-all duration-200">
+                        <i data-lucide="layout-dashboard" class="size-5 shrink-0"></i>
+                        <span class="text-sm">Dashboard & Riwayat</span>
+                    </button>
+                </div>
+
+                <!-- Footer Copyright -->
+                <div class="mt-auto pt-4 border-t border-border px-3 text-center">
+                    <p class="text-xs text-primary font-semibold">© Copyright MR'Squad</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 lg:ml-[280px] flex flex-col bg-muted min-h-screen overflow-x-hidden">
+            <!-- Top Navbar -->
+            <header
+                class="flex items-center justify-between w-full h-[86px] shrink-0 border-b border-border bg-white px-5 md:px-8">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar()" aria-label="Buka menu"
+                        class="lg:hidden size-10 flex items-center justify-center rounded-xl bg-muted hover:bg-border text-foreground transition-all">
+                        <i data-lucide="menu" class="size-5"></i>
+                    </button>
+                    <div>
+                        <h2 id="top-title" class="font-bold text-xl text-foreground">Form Laporan Kegiatan Harian</h2>
+                        <p class="text-xs text-secondary hidden sm:block">Perumda Air Minum Kota Makassar</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <p id="clock-date" class="font-medium text-xs text-foreground"></p>
+                        <p class="text-[11px] text-success font-semibold flex items-center justify-end gap-1">
+                            <span class="size-2 rounded-full bg-success animate-pulse"></span> Sistem Online
+                        </p>
+                    </div>
+                    <div
+                        class="size-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm">
+                        <i data-lucide="user" class="size-5"></i>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content Area -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8">
+
+                <!-- ============================================================== -->
+                <!-- VIEW 1: FORM INPUT LAPORAN HARIAN                             -->
+                <!-- ============================================================== -->
+                <div id="view-form" class="max-w-4xl mx-auto flex flex-col gap-6">
+
+                    <!-- Alert / Panduan Singkat -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 md:p-5 flex items-start gap-4">
+                        <div
+                            class="size-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 mt-0.5">
+                            <i data-lucide="info" class="size-5"></i>
+                        </div>
+                        <div class="flex-1 text-sm text-blue-900">
+                            <h4 class="font-bold text-base mb-1">Pengisian Laporan Harian</h4>
+                            <p class="text-blue-800/80 leading-relaxed">
+                                Pastikan memilih <strong>Unit Kerja</strong> terlebih dahulu agar pilihan
+                                <strong>Seksi/Jabatan</strong> tersaring secara otomatis. Jangan lupa melampirkan
+                                <strong>Foto Time Mark</strong> sebagai bukti kehadiran/kegiatan.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Form Body -->
+                    <form id="laporan-form" onsubmit="handleSubmitLaporan(event)" class="flex flex-col gap-6">
+
+                        <!-- CARD 1: IDENTITAS PEGAWAI & UNIT KERJA -->
+                        <div class="bg-white rounded-2xl border border-border p-6 md:p-7 shadow-sm flex flex-col gap-5">
+                            <div class="flex items-center justify-between border-b border-border pb-4">
+                                <div class="flex items-center gap-2.5">
+                                    <div
+                                        class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                        <i data-lucide="user-check" class="size-4"></i>
+                                    </div>
+                                    <h3 class="font-bold text-base text-foreground">Identitas & Unit Kerja Pegawai</h3>
+                                </div>
+                                <span class="text-xs text-error font-medium">* Wajib diisi</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <!-- Hari / Tanggal -->
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                        Hari / Tanggal <span class="text-error">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <input type="date" id="input-tanggal" required
+                                            class="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                                    </div>
+                                </div>
+
+                                <!-- NPP -->
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                        NPP (Nomor Pokok Pegawai) <span class="text-error">*</span>
+                                    </label>
+                                    <div class="relative">
+                                        <input type="text" id="input-npp" required placeholder="Contoh: 100124"
+                                            onchange="handleNppChange()" oninput="handleNppInput()"
+                                            class="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                                    </div>
+                                    <p id="npp-status-badge"
+                                        class="hidden text-[11px] font-semibold mt-1.5 flex items-center gap-1">
+                                        <!-- Status dimuat dinamis -->
+                                    </p>
+                                </div>
+
+                                <!-- Nama Pegawai -->
+                                <div class="md:col-span-2">
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                        Nama Lengkap & Gelar <span class="text-error">*</span>
+                                    </label>
+                                    <input type="text" id="input-nama" required placeholder="Nama lengkap pegawai"
+                                        class="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                                </div>
+
+                                <!-- Unit Kerja (Dropdown Utama) -->
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                        Unit Kerja / Bagian <span class="text-error">*</span>
+                                    </label>
+                                    <select id="select-unit" required onchange="handleUnitChange()"
+                                        class="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                                        <option value="">-- Pilih Unit Kerja --</option>
+                                        <option value="UMUM DAN KEPEGAWAIAN">UMUM DAN KEPEGAWAIAN</option>
+                                        <option value="SPI">SPI</option>
+                                        <option value="SEKPER">SEKPER</option>
+                                        <option value="PERLENGKAPAN">PERLENGKAPAN</option>
+                                        <option value="ANGGARAN DAN PERBENDAHARAAN">ANGGARAN DAN PERBENDAHARAAN</option>
+                                        <option value="VERIFIKASI DAN AKUNTANSI">VERIFIKASI DAN AKUNTANSI</option>
+                                        <option value="PERENCANAAN TEKNIK">PERENCANAAN TEKNIK</option>
+                                        <option value="DISTRIBUSI DAN KEHILANGAN AIR">DISTRIBUSI DAN KEHILANGAN AIR
+                                        </option>
+                                        <option value="PRODUKSI">PRODUKSI</option>
+                                        <option value="WILAYAH 1">WILAYAH 1</option>
+                                        <option value="WILAYAH 2">WILAYAH 2</option>
+                                        <option value="WILAYAH 3">WILAYAH 3</option>
+                                        <option value="WILAYAH 4">WILAYAH 4</option>
+                                        <option value="WILAYAH 5">WILAYAH 5</option>
+                                        <option value="WILAYAH 6">WILAYAH 6</option>
+                                    </select>
+                                </div>
+
+                                <!-- Seksi / Jabatan (Cascading Dropdown) -->
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                        Seksi <span class="text-error">*</span>
+                                    </label>
+                                    <select id="select-seksi" required
+                                        class="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                                        <option value="">-- Pilih Unit Kerja Terlebih Dahulu --</option>
+                                    </select>
+                                </div>
+
+                                <!-- Atasan Langsung & Direktur Umum -->
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                        Atasan Langsung (Mengetahui)
+                                    </label>
+                                    <input type="text" id="input-atasan" value="-- Pilih Unit Kerja Terlebih Dahulu --"
+                                        readonly
+                                        class="w-full rounded-xl border border-border bg-muted/80 px-4 py-3 text-sm font-semibold text-foreground cursor-not-allowed outline-none select-none" />
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                        Pimpinan
+                                    </label>
+                                    <input type="text" id="input-direktur" value="Direktur Umum" readonly
+                                        class="w-full rounded-xl border border-border bg-muted/80 px-4 py-3 text-sm font-semibold text-foreground cursor-not-allowed outline-none select-none" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- CARD 2: RINCIAN KEGIATAN HARIAN -->
+                        <div class="bg-white rounded-2xl border border-border p-6 md:p-7 shadow-sm flex flex-col gap-5">
+                            <div
+                                class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-4 gap-2">
+                                <div class="flex items-center gap-2.5">
+                                    <div
+                                        class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                        <i data-lucide="clock" class="size-4"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-base text-foreground">Rincian Kegiatan Harian Pegawai
+                                        </h3>
+                                        <p class="text-xs text-secondary">Uraian hasil pekerjaan per sesi jam kerja
+                                            (08:00 - 16:00)</p>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="tambahBarisKegiatan()"
+                                    class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
+                                    <i data-lucide="plus" class="size-4"></i>
+                                    Tambah Slot Waktu
+                                </button>
+                            </div>
+
+                            <!-- List Input Sesi Jam -->
+                            <div id="kegiatan-container" class="flex flex-col gap-4">
+                                <!-- Baris Kegiatan akan dimuat oleh Javascript -->
+                            </div>
+                        </div>
+
+                        <!-- CARD 3: FOTO TIME MARK BUKTI KEGIATAN -->
+                        <div class="bg-white rounded-2xl border border-border p-6 md:p-7 shadow-sm flex flex-col gap-5">
+                            <div class="flex items-center justify-between border-b border-border pb-4">
+                                <div class="flex items-center gap-2.5">
+                                    <div
+                                        class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                        <i data-lucide="camera" class="size-4"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-base text-foreground">Lampiran Bukti Foto Time Mark
+                                        </h3>
+                                        <p class="text-xs text-secondary">Foto dokumentasi / presensi time mark (Bisa
+                                            upload 1 atau beberapa foto sekaligus)</p>
+                                    </div>
+                                </div>
+                                <span id="foto-counter-badge"
+                                    class="text-xs text-primary font-bold bg-primary/10 px-2.5 py-1 rounded-full">
+                                    0 Foto Terpilih
+                                </span>
+                            </div>
+
+                            <!-- Upload Box -->
+                            <div
+                                class="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl p-6 hover:border-primary/50 transition-colors bg-muted/30 relative">
+                                <input type="file" id="foto-input" accept="image/*" multiple
+                                    onchange="handleFotoChange(event)"
+                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+
+                                <div id="upload-placeholder" class="flex flex-col items-center text-center gap-3">
+                                    <div
+                                        class="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                                        <i data-lucide="image-plus" class="size-7"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-sm text-foreground">Klik atau Tarik Foto Time Mark
+                                            ke sini</p>
+                                        <p class="text-xs text-secondary mt-1">Anda bisa memilih lebih dari 1 foto
+                                            sekaligus dari galeri / kamera</p>
+                                    </div>
+                                    <button type="button"
+                                        class="px-4 py-2 bg-white rounded-xl border border-border text-xs font-semibold text-foreground shadow-sm hover:bg-muted pointer-events-none">
+                                        Pilih Foto Kamera / File (Bisa Banyak)
+                                    </button>
+                                </div>
+
+                                <!-- Multi-Image Preview Gallery -->
+                                <div id="preview-container" class="hidden flex-col gap-4 w-full z-20">
+                                    <div id="preview-gallery"
+                                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 w-full">
+                                        <!-- Gambar preview dimuat secara dinamis -->
+                                    </div>
+                                    <div class="flex items-center justify-between pt-2 border-t border-border w-full">
+                                        <p id="foto-info" class="text-xs text-secondary font-medium"></p>
+                                        <div class="flex items-center gap-2">
+                                            <button type="button" onclick="hapusFoto(event)"
+                                                class="px-3 py-1.5 bg-error-light hover:bg-error/20 text-error text-xs font-semibold rounded-lg transition-colors">
+                                                Hapus Semua Foto
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUBMIT BUTTON -->
+                        <div class="flex items-center justify-end gap-3 pb-8">
+                            <button type="reset" onclick="resetFormState()"
+                                class="px-6 py-3.5 rounded-xl border border-border text-sm font-semibold text-secondary hover:bg-white transition-all">
+                                Reset Form
+                            </button>
+                            <button type="submit" id="btn-submit"
+                                class="px-8 py-3.5 rounded-xl bg-primary hover:bg-primary-hover text-white text-sm font-semibold shadow-lg shadow-primary/20 flex items-center gap-2 transition-all">
+                                <i data-lucide="send" class="size-4"></i>
+                                <span>Kirim Laporan Harian</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- VIEW 2: DASHBOARD MONITORING & RIWAYAT LAPORAN                -->
+                <!-- ============================================================== -->
+                <div id="view-dashboard" class="hidden flex flex-col gap-6">
+
+                    <!-- Metric Cards (3 Cards) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div
+                            class="bg-white p-6 rounded-2xl border border-border flex items-center justify-between shadow-sm">
+                            <div>
+                                <p class="text-xs font-semibold text-secondary uppercase tracking-wider">Total Laporan
+                                </p>
+                                <h3 id="stat-total" class="text-2xl font-bold text-foreground mt-1">0</h3>
+                                <p class="text-[11px] text-secondary mt-1">Tercatat di Database</p>
+                            </div>
+                            <div class="size-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                                <i data-lucide="files" class="size-6"></i>
+                            </div>
+                        </div>
+
+                        <div
+                            class="bg-white p-6 rounded-2xl border border-border flex items-center justify-between shadow-sm">
+                            <div>
+                                <p class="text-xs font-semibold text-secondary uppercase tracking-wider">Laporan Hari
+                                    Ini</p>
+                                <h3 id="stat-hari-ini" class="text-2xl font-bold text-success mt-1">0</h3>
+                                <p class="text-[11px] text-secondary mt-1">Masuk hari ini</p>
+                            </div>
+                            <div class="size-12 rounded-xl bg-success/10 flex items-center justify-center text-success">
+                                <i data-lucide="calendar-check" class="size-6"></i>
+                            </div>
+                        </div>
+
+                        <div
+                            class="bg-white p-6 rounded-2xl border border-border flex items-center justify-between shadow-sm">
+                            <div>
+                                <p class="text-xs font-semibold text-secondary uppercase tracking-wider">Unit Kerja</p>
+                                <h3 id="stat-unit" class="text-2xl font-bold text-warning mt-1">15</h3>
+                                <p class="text-[11px] text-secondary mt-1">Bagian & Wilayah</p>
+                            </div>
+                            <div class="size-12 rounded-xl bg-warning/10 flex items-center justify-center text-warning">
+                                <i data-lucide="building-2" class="size-6"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filter & Search Bar -->
+                    <div
+                        class="bg-white rounded-2xl border border-border p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div class="flex flex-1 items-center gap-3 bg-muted/60 rounded-xl px-4 py-2.5 w-full md:w-auto">
+                            <i data-lucide="search" class="size-4 text-secondary"></i>
+                            <input type="text" id="search-keyword" oninput="handleSearch()"
+                                placeholder="Cari nama pegawai, NPP, seksi, atau tanggal..."
+                                class="bg-transparent border-none outline-none text-sm w-full text-foreground placeholder:text-secondary" />
+                        </div>
+
+                        <div class="flex items-center gap-3 w-full md:w-auto">
+                            <select id="filter-unit" onchange="handleFilterUnit()"
+                                class="rounded-xl border border-border bg-white px-3.5 py-2.5 text-xs font-medium text-foreground outline-none w-full md:w-auto">
+                                <option value="ALL">Semua Unit Kerja</option>
+                                <option value="UMUM DAN KEPEGAWAIAN">UMUM DAN KEPEGAWAIAN</option>
+                                <option value="SPI">SPI</option>
+                                <option value="SEKPER">SEKPER</option>
+                                <option value="PERLENGKAPAN">PERLENGKAPAN</option>
+                                <option value="ANGGARAN DAN PERBENDAHARAAN">ANGGARAN DAN PERBENDAHARAAN</option>
+                                <option value="VERIFIKASI DAN AKUNTANSI">VERIFIKASI DAN AKUNTANSI</option>
+                                <option value="PERENCANAAN TEKNIK">PERENCANAAN TEKNIK</option>
+                                <option value="DISTRIBUSI DAN KEHILANGAN AIR">DISTRIBUSI DAN KEHILANGAN AIR</option>
+                                <option value="PRODUKSI">PRODUKSI</option>
+                                <option value="WILAYAH 1">WILAYAH 1</option>
+                                <option value="WILAYAH 2">WILAYAH 2</option>
+                                <option value="WILAYAH 3">WILAYAH 3</option>
+                                <option value="WILAYAH 4">WILAYAH 4</option>
+                                <option value="WILAYAH 5">WILAYAH 5</option>
+                                <option value="WILAYAH 6">WILAYAH 6</option>
+                            </select>
+
+                            <button onclick="muatDataDashboard()"
+                                class="size-10 flex items-center justify-center rounded-xl bg-muted hover:bg-border text-foreground transition-all shrink-0"
+                                title="Segarkan Data">
+                                <i data-lucide="refresh-cw" class="size-4"></i>
+                            </button>
+
+                            <button onclick="bukaModalUbahPin()"
+                                class="px-3.5 py-2.5 rounded-xl bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0"
+                                title="Ubah PIN Admin">
+                                <i data-lucide="key" class="size-4"></i>
+                                <span class="hidden sm:inline">Ubah PIN Admin</span>
+                            </button>
+
+                            <button onclick="kunciDashboard()"
+                                class="px-3.5 py-2.5 rounded-xl bg-error-light hover:bg-error/20 text-error text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0"
+                                title="Kunci Akses Dashboard">
+                                <i data-lucide="lock" class="size-4"></i>
+                                <span class="hidden sm:inline">Kunci Dashboard</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Data Table Card -->
+                    <div class="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
+                        <div class="p-5 border-b border-border flex items-center justify-between">
+                            <h3 class="font-bold text-base text-foreground">Riwayat Laporan Pegawai</h3>
+                            <span id="table-count" class="text-xs text-secondary font-medium">Menampilkan 0
+                                laporan</span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead
+                                    class="bg-muted/60 text-secondary uppercase text-[11px] font-semibold tracking-wider border-b border-border">
+                                    <tr>
+                                        <th class="py-3.5 px-4">Hari / Tanggal</th>
+                                        <th class="py-3.5 px-4">Pegawai</th>
+                                        <th class="py-3.5 px-4">Unit Kerja & Seksi</th>
+                                        <th class="py-3.5 px-4 text-center">Foto Bukti</th>
+                                        <th class="py-3.5 px-4 text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-body" class="divide-y divide-border">
+                                    <tr>
+                                        <td colspan="5" class="py-8 text-center text-secondary text-sm">
+                                            Memuat data riwayat laporan...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL 1: FORMAT CETAK RESMI form.docx (PRINT / EXPORT PDF)     -->
+    <!-- ============================================================== -->
+    <div id="modal-cetak"
+        class="fixed inset-0 bg-black/70 z-[100] hidden items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div
+            class="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+            <!-- Modal Header (No Print) -->
+            <div class="flex items-center justify-between p-4 border-b border-border bg-card-grey no-print">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="printer" class="size-5 text-primary"></i>
+                    <h3 class="font-bold text-base text-foreground">Pratinjau Cetak Format Resmi PERUMDA</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="eksekusiCetak()"
+                        class="px-4 py-2 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-sm transition-all">
+                        <i data-lucide="printer" class="size-4"></i>
+                        Cetak / Download PDF
+                    </button>
+                    <button onclick="tutupModalCetak()"
+                        class="size-8 rounded-lg bg-muted hover:bg-border text-secondary flex items-center justify-center">
+                        <i data-lucide="x" class="size-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Printable Document Body (A4 Paper Simulation) -->
+            <div class="p-6 sm:p-10 overflow-y-auto flex-1 bg-white text-black font-sans leading-relaxed"
+                id="print-container">
+                <!-- Judul Dokumen Sesuai form.docx -->
+                <div class="text-center font-bold text-base sm:text-lg underline uppercase mb-6 tracking-wide">
+                    FORMAT LAPORAN KEGIATAN HARIAN PEGAWAI<br>PERUMDA AIR MINUM KOTA MAKASSAR
+                </div>
+
+                <!-- Tabel Meta Pegawai -->
+                <table class="w-full text-xs sm:text-sm mb-5 border-collapse">
+                    <tr>
+                        <td class="w-32 py-1 font-bold">Nama Pegawai</td>
+                        <td class="w-4 py-1">:</td>
+                        <td class="py-1" id="print-nama">-</td>
+                        <td class="w-32 py-1 font-bold">Hari / Tanggal</td>
+                        <td class="w-4 py-1">:</td>
+                        <td class="py-1" id="print-tanggal">-</td>
+                    </tr>
+                    <tr>
+                        <td class="py-1 font-bold">NPP</td>
+                        <td class="py-1">:</td>
+                        <td class="py-1" id="print-npp">-</td>
+                        <td class="py-1 font-bold">Atasan Langsung</td>
+                        <td class="py-1">:</td>
+                        <td class="py-1" id="print-atasan">Sekretaris Direktur Umum</td>
+                    </tr>
+                    <tr>
+                        <td class="py-1 font-bold">Jabatan</td>
+                        <td class="py-1">:</td>
+                        <td class="py-1" id="print-jabatan">-</td>
+                        <td class="py-1 font-bold">Direktur Umum</td>
+                        <td class="py-1">:</td>
+                        <td class="py-1" id="print-direktur">Direktur Umum</td>
+                    </tr>
+                    <tr>
+                        <td class="py-1 font-bold">Unit Kerja</td>
+                        <td class="py-1">:</td>
+                        <td colspan="4" class="py-1 font-semibold" id="print-unit">-</td>
+                    </tr>
+                </table>
+
+                <!-- Bagian A: Rincian Kegiatan Harian Sesuai form.docx -->
+                <div class="font-bold text-xs sm:text-sm mb-2">A. RINCIAN KEGIATAN HARIAN</div>
+                <table class="w-full text-xs sm:text-sm border-collapse border border-black mb-6">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-black py-2 px-2 text-center w-10">No.</th>
+                            <th class="border border-black py-2 px-3 text-left w-36">Waktu Kegiatan</th>
+                            <th class="border border-black py-2 px-3 text-left">Uraian / Hasil Kegiatan</th>
+                            <th class="border border-black py-2 px-3 text-center w-28">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="print-table-kegiatan">
+                        <!-- Dimuat secara dinamis -->
+                    </tbody>
+                </table>
+
+                <!-- Bagian B: Lampiran Foto Time Mark -->
+                <div id="print-foto-section" class="mb-6 page-break-inside-avoid">
+                    <div class="font-bold text-xs sm:text-sm mb-2">B. LAMPIRAN BUKTI KEGIATAN (FOTO TIME MARK)</div>
+                    <div id="print-foto-container"
+                        class="grid grid-cols-2 gap-3 sm:gap-4 border border-dashed border-gray-300 p-3 rounded-xl bg-gray-50">
+                        <!-- Dimuat secara dinamis -->
+                    </div>
+                </div>
+
+                <!-- Pengesahan / Tanda Tangan Sesuai form.docx -->
+                <table class="w-full text-xs sm:text-sm mt-8 border-collapse page-break-inside-avoid">
+                    <tr>
+                        <td class="w-1/2 text-left pl-6 align-top">
+                            <br>
+                            Pegawai yang bersangkutan,
+                            <br><br><br><br><br>
+                            <strong id="print-ttd-nama">( ........................................ )</strong><br>
+                            <span id="print-ttd-npp">NPP: ......................</span>
+                        </td>
+                        <td class="w-1/2 text-center align-top">
+                            <span id="print-lokasi-tgl">Makassar, ......................... 2026</span><br>
+                            Mengetahui,<br>
+                            <strong id="print-ttd-atasan">Sekretaris Direktur Umum</strong>
+                            <br><br><br><br>
+                            <strong>( ........................................ )</strong>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL 2: NOTIFIKASI SUKSES                                     -->
+    <!-- ============================================================== -->
+    <div id="modal-sukses" class="fixed inset-0 bg-black/60 z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center">
+            <div class="size-16 bg-success-light rounded-2xl flex items-center justify-center mb-4 text-success">
+                <i data-lucide="check-circle" class="size-10"></i>
+            </div>
+            <h3 class="font-bold text-xl text-foreground">Laporan Berhasil Dikirim!</h3>
+            <p id="sukses-pesan" class="text-sm text-secondary mt-2 mb-6 leading-relaxed">
+                Laporan kegiatan harian Anda telah tersimpan rapi ke sistem.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full">
+                <button onclick="cetakLaporanTerakhir()"
+                    class="w-full px-4 py-3 bg-primary text-white text-xs font-semibold rounded-xl hover:bg-primary-hover flex items-center justify-center gap-2 transition-all">
+                    <i data-lucide="printer" class="size-4"></i>
+                    Cetak Format Resmi
+                </button>
+                <button onclick="tutupModalSukses()"
+                    class="w-full px-4 py-3 bg-muted text-foreground text-xs font-semibold rounded-xl hover:bg-border transition-all">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL 3: PROTEKSI PIN ADMIN / SUPERADMIN DASHBOARD            -->
+    <!-- ============================================================== -->
+    <div id="modal-pin-admin" class="fixed inset-0 bg-black/70 z-[110] hidden items-center justify-center p-4">
+        <div
+            class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
+            <!-- Decorative Accent -->
+            <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-primary via-blue-500 to-indigo-600"></div>
+
+            <div class="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 text-primary">
+                <i data-lucide="lock" class="size-8"></i>
+            </div>
+
+            <h3 class="font-bold text-xl text-foreground">Akses Terkunci Admin</h3>
+            <p class="text-xs text-secondary mt-1 mb-5 leading-relaxed">
+                Masukkan <strong>PIN Rahasia Admin / Superadmin</strong> untuk membuka Dashboard Monitoring & Riwayat
+                Laporan.
+            </p>
+
+            <form onsubmit="submitVerifikasiPin(event)" class="w-full flex flex-col gap-4">
+                <div class="relative w-full">
+                    <input type="password" id="input-pin-admin" required placeholder="Masukkan 6-digit PIN Admin..."
+                        maxlength="20" autofocus
+                        class="w-full text-center text-lg font-bold tracking-widest rounded-xl border border-border bg-muted/40 px-4 py-3.5 text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                    <button type="button" onclick="toggleVisibilityPin()"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 size-8 text-secondary hover:text-foreground flex items-center justify-center">
+                        <i id="icon-eye-pin" data-lucide="eye" class="size-4"></i>
+                    </button>
+                </div>
+
+                <div id="error-pin-admin"
+                    class="hidden text-xs text-error font-semibold flex items-center justify-center gap-1">
+                    <i data-lucide="alert-circle" class="size-3.5"></i>
+                    <span id="error-pin-text">PIN Admin Salah! Silakan coba lagi.</span>
+                </div>
+
+                <div class="flex items-center gap-3 w-full mt-2">
+                    <button type="button" onclick="tutupModalPinAdmin()"
+                        class="w-1/2 px-4 py-3 bg-muted text-foreground text-xs font-semibold rounded-xl hover:bg-border transition-all">
+                        Batal
+                    </button>
+                    <button type="submit" id="btn-submit-pin"
+                        class="w-1/2 px-4 py-3 bg-primary hover:bg-primary-hover text-white text-xs font-semibold rounded-xl shadow-md shadow-primary/20 flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="key-round" class="size-4"></i>
+                        <span>Buka Dashboard</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL 4: UBAH PIN RAHASIA ADMIN / SUPERADMIN                  -->
+    <!-- ============================================================== -->
+    <div id="modal-ubah-pin" class="fixed inset-0 bg-black/70 z-[120] hidden items-center justify-center p-4">
+        <div
+            class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
+            <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-purple-500 via-primary to-indigo-600"></div>
+
+            <div class="size-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-4 text-purple-600">
+                <i data-lucide="key-round" class="size-8"></i>
+            </div>
+
+            <h3 class="font-bold text-xl text-foreground">Ubah PIN Admin</h3>
+            <p class="text-xs text-secondary mt-1 mb-5 leading-relaxed">
+                PIN baru akan otomatis tersimpan di sheet <strong>Master_Admin</strong> dan berlaku secara langsung.
+            </p>
+
+            <form onsubmit="submitUbahPinAdmin(event)" class="w-full flex flex-col gap-3.5 text-left">
+                <div>
+                    <label class="block text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1">
+                        PIN Admin Saat Ini / Lama <span class="text-error">*</span>
+                    </label>
+                    <input type="password" id="input-pin-lama" required placeholder="Masukkan PIN lama..."
+                        class="w-full rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 text-sm font-semibold text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1">
+                        PIN Admin Baru (Min. 4 Angka/Karakter) <span class="text-error">*</span>
+                    </label>
+                    <input type="password" id="input-pin-baru" required placeholder="Masukkan PIN baru..."
+                        class="w-full rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 text-sm font-semibold text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                </div>
+
+                <div>
+                    <label class="block text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1">
+                        Konfirmasi PIN Admin Baru <span class="text-error">*</span>
+                    </label>
+                    <input type="password" id="input-pin-konfirmasi" required placeholder="Ketik ulang PIN baru..."
+                        class="w-full rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 text-sm font-semibold text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
+                </div>
+
+                <div id="error-ubah-pin" class="hidden text-xs text-error font-semibold flex items-center gap-1 mt-1">
+                    <i data-lucide="alert-circle" class="size-3.5 shrink-0"></i>
+                    <span id="error-ubah-pin-text">Gagal memperbarui PIN!</span>
+                </div>
+
+                <div id="sukses-ubah-pin"
+                    class="hidden text-xs text-success font-semibold flex items-center gap-1 mt-1">
+                    <i data-lucide="check-circle" class="size-3.5 shrink-0"></i>
+                    <span id="sukses-ubah-pin-text">PIN Admin Berhasil Diperbarui!</span>
+                </div>
+
+                <div class="flex items-center gap-3 w-full mt-3">
+                    <button type="button" onclick="tutupModalUbahPin()"
+                        class="w-1/2 px-4 py-3 bg-muted text-foreground text-xs font-semibold rounded-xl hover:bg-border transition-all">
+                        Batal
+                    </button>
+                    <button type="submit" id="btn-submit-ubah-pin"
+                        class="w-1/2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-xl shadow-md shadow-purple-200 flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="save" class="size-4"></i>
+                        <span>Simpan PIN Baru</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- LOGIKA JAVASCRIPT APLIKASI                                    -->
+    <!-- ============================================================== -->
+    <script>
+        // MASTER DATA ORGANISASI DARI PERUMDA AIR MINUM KOTA MAKASSAR
+        const MASTER_ORGANISASI = {
+            "UMUM DAN KEPEGAWAIAN": [
+                "KASIE. MANAJEMEN RISIKO",
+                "KASIE. PENDAYAGUNAAN PEGAWAI",
+                "KASIE. TATA USAHA DAN PDE",
+                "KASIE. KESELAMATAN DAN KESEHATAN KERJA"
+            ],
+            "SPI": [
+                "KASIE. PENGAWASAN TEKNIK & OPERASIONAL",
+                "KASIE. PENGAWASAN KEUANGAN & ASET"
+            ],
+            "SEKPER": [
+                "KASIE. HUKUM",
+                "KASIE. HUBUNGAN MASYARAKAT",
+                "KASIE. HUBUNGAN LANGGANAN",
+                "KASIE. PENELITIAN DAN PENGEMBANGAN",
+                "KASIE. RUMAH TANGGA DAN KEPROTOKOLERAN"
+            ],
+            "PERLENGKAPAN": [
+                "KASIE. ANALISA KEBUTUHAN DAN PENGADAAN",
+                "KASIE. INVENTARISASI ASSET",
+                "KASIE. PERGUDANGAN"
+            ],
+            "ANGGARAN DAN PERBENDAHARAAN": [
+                "KASIE. ANGGARAN",
+                "KASIE. PERBENDAHARAAN"
+            ],
+            "VERIFIKASI DAN AKUNTANSI": [
+                "KASIE. VERIFIKASI",
+                "KASIE. AKUNTANSI DAN PELAPORAN",
+                "KASIE. PAJAK"
+            ],
+            "PERENCANAAN TEKNIK": [
+                "KASIE. PERENCANAAN & PEMETAAN",
+                "KASIE. PENGAWASAN TEKNIK"
+            ],
+            "DISTRIBUSI DAN KEHILANGAN AIR": [
+                "KASIE. KEBOCORAN AIR DAN PELAYANAN SOSIAL",
+                "KASIE. PEMELIHARAAN"
+            ],
+            "PRODUKSI": [
+                "KASIE. IPA I",
+                "KASIE. IPA II",
+                "KASIE. IPA III",
+                "KASIE. IPA IV",
+                "KASIE. IPA V",
+                "KASIE. LABORATORIUM",
+                "KASIE. AIR BAKU"
+            ],
+            "WILAYAH 1": [
+                "SEKRETARIS WILAYAH PELAYANAN",
+                "KASIE. PELAYANAN PELANGGAN WP",
+                "KASIE. TEKNIK WP",
+                "KASIE. BACA METER DAN PENAGIHAN WP"
+            ],
+            "WILAYAH 2": [
+                "SEKRETARIS WILAYAH PELAYANAN",
+                "KASIE. PELAYANAN PELANGGAN",
+                "KASIE. TEKNIK WP",
+                "KASIE. BACA METER DAN PENAGIHAN WP"
+            ],
+            "WILAYAH 3": [
+                "SEKRETARIS WILAYAH PELAYANAN",
+                "KASIE. PELAYANAN PELANGGAN",
+                "KASIE. TEKNIK WP",
+                "KASIE. BACA METER DAN PENAGIHAN WP"
+            ],
+            "WILAYAH 4": [
+                "SEKRETARIS WILAYAH PELAYANAN",
+                "KASIE. PELAYANAN PELANGGAN",
+                "KASIE. TEKNIK WP",
+                "KASIE. BACA METER DAN PENAGIHAN WP"
+            ],
+            "WILAYAH 5": [
+                "SEKRETARIS WILAYAH PELAYANAN",
+                "KASIE. PELAYANAN PELANGGAN",
+                "KASIE. TEKNIK WP",
+                "KASIE. BACA METER DAN PENAGIHAN WP"
+            ],
+            "WILAYAH 6": [
+                "SEKRETARIS WILAYAH PELAYANAN",
+                "KASIE. PELAYANAN PELANGGAN",
+                "KASIE. TEKNIK WP",
+                "KASIE. BACA METER DAN PENAGIHAN WP"
+            ]
+        };
+
+        // DEFAULT WAKTU KEGIATAN SESUAI GOOGLE FORM & FORM.DOCX
+        const DEFAULT_SLOTS = [
+            "08:00 - 09:00",
+            "09:00 - 10:00",
+            "10:00 - 11:00",
+            "11:00 - 12:00",
+            "13:30 - 14:00",
+            "14:00 - 15:00",
+            "15:00 - 16:00"
+        ];
+
+        let fotoList = []; // Array menampung multi-foto: { id, base64, name, size }
+        let laporanTerakhirData = null;
+        let semuaLaporanData = [];
+
+        // Inisialisasi Halaman
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.lucide) lucide.createIcons();
+            initDateAndClock();
+            initDropdownUnitKerja();
+            renderDefaultKegiatan();
+            muatDataDashboard();
+        });
+
+        // Inisialisasi Tanggal Hari Ini
+        function initDateAndClock() {
+            const today = new Date();
+            const dateInput = document.getElementById('input-tanggal');
+            dateInput.value = today.toISOString().split('T')[0];
+
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const todayStr = today.toLocaleDateString('id-ID', options);
+            document.getElementById('clock-date').innerText = todayStr;
+        }
+
+        // Mengisi Dropdown Unit Kerja
+        function initDropdownUnitKerja() {
+            const selectUnit = document.getElementById('select-unit');
+            const filterUnit = document.getElementById('filter-unit');
+
+            const fillOptions = (orgMap) => {
+                const data = orgMap || MASTER_ORGANISASI;
+                if (!data) return;
+
+                if (selectUnit && selectUnit.options.length <= 1) {
+                    selectUnit.innerHTML = '<option value="">-- Pilih Unit Kerja --</option>';
+                    Object.keys(data).forEach(unit => {
+                        const opt = document.createElement('option');
+                        opt.value = unit;
+                        opt.innerText = unit;
+                        selectUnit.appendChild(opt);
+                    });
+                }
+
+                if (filterUnit && filterUnit.options.length <= 1) {
+                    filterUnit.innerHTML = '<option value="ALL">Semua Unit Kerja</option>';
+                    Object.keys(data).forEach(unit => {
+                        const opt = document.createElement('option');
+                        opt.value = unit;
+                        opt.innerText = unit;
+                        filterUnit.appendChild(opt);
+                    });
+                }
+            };
+
+            fillOptions(MASTER_ORGANISASI);
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        if (res && res.success && res.data && Object.keys(res.data).length > 0) {
+                            window.ORGANISASI_DATA = res.data;
+                            fillOptions(res.data);
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        console.warn('Gagal load Master_Organisasi, menggunakan fallback bawaan.');
+                    })
+                    .getMasterOrganisasi();
+            }
+        }
+
+        const ATASAN_MAP = {
+            "UMUM DAN KEPEGAWAIAN": "Kepala Bagian Umum dan Kepegawaian",
+            "SPI": "Kepala Satuan Pengawasan Intern",
+            "SEKPER": "Kepala Sekretariat Perusahaan",
+            "PERLENGKAPAN": "Kepala Bagian Perlengkapan",
+            "ANGGARAN DAN PERBENDAHARAAN": "Kepala Bagian Anggaran dan Perbendaharaan",
+            "VERIFIKASI DAN AKUNTANSI": "Kepala Bagian Verifikasi dan Akuntansi",
+            "PERENCANAAN TEKNIK": "Kepala Bagian Perencanaan Teknik",
+            "DISTRIBUSI DAN KEHILANGAN AIR": "Kepala Bagian Distribusi dan Kehilangan Air",
+            "PRODUKSI": "Kepala Bagian Produksi",
+            "WILAYAH 1": "Kepala Wilayah Pelayanan 1",
+            "WILAYAH 2": "Kepala Wilayah Pelayanan 2",
+            "WILAYAH 3": "Kepala Wilayah Pelayanan 3",
+            "WILAYAH 4": "Kepala Wilayah Pelayanan 4",
+            "WILAYAH 5": "Kepala Wilayah Pelayanan 5",
+            "WILAYAH 6": "Kepala Wilayah Pelayanan 6"
+        };
+
+        // Auto-Fill NPP Pegawai dari Master_Pegawai
+        let nppSearchTimeout = null;
+
+        function handleNppInput() {
+            if (nppSearchTimeout) clearTimeout(nppSearchTimeout);
+            nppSearchTimeout = setTimeout(() => {
+                handleNppChange();
+            }, 400);
+        }
+
+        function handleNppChange() {
+            const nppVal = document.getElementById('input-npp').value.trim();
+            const badge = document.getElementById('npp-status-badge');
+            if (!nppVal || nppVal.length < 3) {
+                if (badge) badge.className = 'hidden';
+                return;
+            }
+
+            if (badge) {
+                badge.className = 'text-[11px] font-semibold mt-1.5 flex items-center gap-1 text-secondary';
+                badge.innerHTML = `<div class="size-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></div> Mencari data pegawai...`;
+            }
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        applyPegawaiAutoFill(res);
+                    })
+                    .withFailureHandler(function (err) {
+                        if (badge) badge.className = 'hidden';
+                    })
+                    .getPegawaiByNpp(nppVal);
+            } else {
+                // Mock Auto-Fill untuk Pengujian Lokal
+                setTimeout(() => {
+                    const mockPegawai = {
+                        '100124': { npp: '100124', nama: 'Ahmad Rusdi, S.T.', unitKerja: 'SEKPER', seksi: 'KASIE. PENELITIAN DAN PENGEMBANGAN' },
+                        '100125': { npp: '100125', nama: 'Nurhasanah, S.Sos.', unitKerja: 'SEKPER', seksi: 'KASIE. HUBUNGAN MASYARAKAT' },
+                        '100126': { npp: '100126', nama: 'Ir. Bambang Wijaya', unitKerja: 'PRODUKSI', seksi: 'KASIE. IPA I' },
+                        '100127': { npp: '100127', nama: 'Faisal Karim, S.E.', unitKerja: 'UMUM DAN KEPEGAWAIAN', seksi: 'KASIE. TATA USAHA DAN PDE' }
+                    };
+                    const item = mockPegawai[nppVal];
+                    if (item) {
+                        applyPegawaiAutoFill({ success: true, found: true, data: item });
+                    } else {
+                        applyPegawaiAutoFill({ success: true, found: false });
+                    }
+                }, 300);
+            }
+        }
+
+        function applyPegawaiAutoFill(res) {
+            const badge = document.getElementById('npp-status-badge');
+            if (res && res.success && res.found && res.data) {
+                const p = res.data;
+                if (p.nama) document.getElementById('input-nama').value = p.nama;
+
+                if (p.unitKerja) {
+                    const selectUnit = document.getElementById('select-unit');
+                    selectUnit.value = p.unitKerja;
+                    handleUnitChange();
+                }
+
+                if (p.seksi) {
+                    setTimeout(() => {
+                        const selectSeksi = document.getElementById('select-seksi');
+                        if (selectSeksi) selectSeksi.value = p.seksi;
+                    }, 50);
+                }
+
+                if (badge) {
+                    badge.className = 'text-[11px] font-semibold mt-1.5 flex items-center gap-1 text-success';
+                    badge.innerHTML = `<i data-lucide="check-circle" class="size-3.5"></i> Data terverifikasi: ${p.nama} (${p.unitKerja})`;
+                    if (window.lucide) lucide.createIcons();
+                }
+            } else {
+                if (badge) {
+                    badge.className = 'text-[11px] font-medium mt-1.5 text-secondary';
+                    badge.innerHTML = `<i data-lucide="info" class="size-3.5 text-warning inline mr-1"></i> NPP belum terdaftar di Master_Pegawai. Silakan isi nama & unit kerja secara manual.`;
+                    if (window.lucide) lucide.createIcons();
+                }
+            }
+        }
+
+        // Handler Cascading Dropdown: Unit Kerja -> Seksi / Jabatan & Auto Atasan Langsung
+        function handleUnitChange() {
+            const unit = document.getElementById('select-unit').value;
+            const selectSeksi = document.getElementById('select-seksi');
+            const inputAtasan = document.getElementById('input-atasan');
+            selectSeksi.innerHTML = '';
+
+            // Otomatisasi Atasan Langsung sesuai aturan unit kerja
+            if (inputAtasan) {
+                inputAtasan.value = unit ? (ATASAN_MAP[unit] || ('Kepala Bagian ' + unit)) : '-- Pilih Unit Kerja Terlebih Dahulu --';
+            }
+
+            const orgData = window.ORGANISASI_DATA || MASTER_ORGANISASI;
+
+            if (!unit || !orgData || !orgData[unit]) {
+                selectSeksi.innerHTML = '<option value="">-- Pilih Unit Kerja Terlebih Dahulu --</option>';
+                return;
+            }
+
+            selectSeksi.innerHTML = '<option value="">-- Pilih Seksi / Jabatan --</option>';
+            orgData[unit].forEach(seksi => {
+                const opt = document.createElement('option');
+                opt.value = seksi;
+                opt.innerText = seksi;
+                selectSeksi.appendChild(opt);
+            });
+        }
+
+        // Render Baris Sesi Jam Kegiatan
+        function renderDefaultKegiatan() {
+            const container = document.getElementById('kegiatan-container');
+            container.innerHTML = '';
+            DEFAULT_SLOTS.forEach((slot, index) => {
+                tambahBarisKegiatan(slot, '', 'Selesai');
+            });
+        }
+
+        function tambahBarisKegiatan(waktu = '', uraian = '', status = 'Selesai') {
+            const container = document.getElementById('kegiatan-container');
+            const rowCount = container.children.length + 1;
+
+            const row = document.createElement('div');
+            row.className = 'kegiatan-row flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 bg-muted/40 rounded-xl border border-border';
+            row.innerHTML = `
+                <div class="flex items-center gap-2 w-full sm:w-44 shrink-0">
+                    <span class="size-6 rounded-md bg-primary/10 text-primary font-bold text-xs flex items-center justify-center shrink-0">
+                        ${rowCount}
+                    </span>
+                    <input type="text" value="${waktu}" placeholder="08:00 - 09:00" required
+                        class="kegiatan-waktu w-full text-xs font-semibold text-foreground bg-white border border-border rounded-lg px-2.5 py-1.5 outline-none focus:border-primary" />
+                </div>
+                <div class="flex-1 w-full">
+                    <input type="text" value="${uraian}" placeholder="Uraikan hasil atau aktivitas pekerjaan..." required
+                        class="kegiatan-uraian w-full text-xs text-foreground bg-white border border-border rounded-lg px-3 py-2 outline-none focus:border-primary focus:ring-1 focus:ring-primary/20" />
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                    <select class="kegiatan-status text-xs bg-white border border-border rounded-lg px-2.5 py-2 outline-none font-medium text-foreground">
+                        <option value="Selesai" ${status === 'Selesai' ? 'selected' : ''}>Selesai</option>
+                        <option value="Sedang Berjalan" ${status === 'Sedang Berjalan' ? 'selected' : ''}>Sedang Berjalan</option>
+                        <option value="Terkendala" ${status === 'Terkendala' ? 'selected' : ''}>Terkendala</option>
+                    </select>
+                    <button type="button" onclick="hapusBarisKegiatan(this)"
+                        class="size-8 rounded-lg hover:bg-error-light text-secondary hover:text-error flex items-center justify-center transition-colors">
+                        <i data-lucide="trash-2" class="size-4"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(row);
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function hapusBarisKegiatan(btn) {
+            const container = document.getElementById('kegiatan-container');
+            if (container.children.length <= 1) {
+                alert('Minimal harus ada 1 sesi kegiatan.');
+                return;
+            }
+            btn.closest('.kegiatan-row').remove();
+            // Re-number rows
+            Array.from(container.children).forEach((el, idx) => {
+                const badge = el.querySelector('span');
+                if (badge) badge.innerText = idx + 1;
+            });
+        }
+
+        // Handler Multi-Foto Time Mark & Client-side Auto Compression
+        function handleFotoChange(e) {
+            const files = Array.from(e.target.files || []);
+            if (files.length === 0) return;
+
+            let loadedCount = 0;
+            files.forEach(file => {
+                if (file.size > 12 * 1024 * 1024) {
+                    alert(`File ${file.name} melebihi batas 12 MB.`);
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    const img = new Image();
+                    img.onload = function () {
+                        // Kompres ke resolusi optimal (max width/height 1280px)
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxDim = 1280;
+
+                        if (width > maxDim || height > maxDim) {
+                            if (width > height) {
+                                height = Math.round((height * maxDim) / width);
+                                width = maxDim;
+                            } else {
+                                width = Math.round((width * maxDim) / height);
+                                height = maxDim;
+                            }
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        const base64 = canvas.toDataURL('image/jpeg', 0.8);
+                        fotoList.push({
+                            id: Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                            base64: base64,
+                            name: file.name,
+                            size: Math.round(file.size / 1024)
+                        });
+
+                        loadedCount++;
+                        if (loadedCount === files.length) {
+                            renderFotoPreviews();
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderFotoPreviews() {
+            const container = document.getElementById('preview-container');
+            const gallery = document.getElementById('preview-gallery');
+            const placeholder = document.getElementById('upload-placeholder');
+            const badge = document.getElementById('foto-counter-badge');
+            const info = document.getElementById('foto-info');
+
+            badge.innerText = `${fotoList.length} Foto Terpilih`;
+
+            if (fotoList.length === 0) {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+                placeholder.classList.remove('hidden');
+                return;
+            }
+
+            placeholder.classList.add('hidden');
+            container.classList.remove('hidden');
+            container.classList.add('flex');
+
+            gallery.innerHTML = '';
+            fotoList.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'relative rounded-xl overflow-hidden border border-border bg-white shadow-sm group';
+                card.innerHTML = `
+                    <img src="${item.base64}" alt="Foto ${index + 1}" class="w-full h-24 object-cover" />
+                    <button type="button" onclick="hapusFotoSatu('${item.id}', event)"
+                        class="absolute top-1 right-1 size-6 bg-black/70 hover:bg-error text-white rounded-full flex items-center justify-center transition-colors">
+                        <i data-lucide="x" class="size-3.5"></i>
+                    </button>
+                    <div class="p-1.5 text-[10px] text-secondary truncate bg-muted/60 font-medium">
+                        Foto #${index + 1} (${item.size} KB)
+                    </div>
+                `;
+                gallery.appendChild(card);
+            });
+
+            info.innerText = `Total ${fotoList.length} foto siap diunggah ke Google Drive per-folder pegawai.`;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function hapusFotoSatu(id, e) {
+            if (e) e.stopPropagation();
+            fotoList = fotoList.filter(x => x.id !== id);
+            renderFotoPreviews();
+        }
+
+        function hapusFoto(e) {
+            if (e) e.stopPropagation();
+            fotoList = [];
+            document.getElementById('foto-input').value = '';
+            renderFotoPreviews();
+        }
+
+        // Submit Laporan
+        function handleSubmitLaporan(e) {
+            e.preventDefault();
+
+            const btnSubmit = document.getElementById('btn-submit');
+            const tanggalVal = document.getElementById('input-tanggal').value;
+            const namaVal = document.getElementById('input-nama').value;
+            const nppVal = document.getElementById('input-npp').value;
+            const unitVal = document.getElementById('select-unit').value;
+            const seksiVal = document.getElementById('select-seksi').value;
+            const atasanVal = document.getElementById('input-atasan').value;
+            const direkturVal = document.getElementById('input-direktur').value;
+
+            // Format Hari / Tanggal lengkap
+            const tglObj = new Date(tanggalVal);
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const hariTanggalStr = tglObj.toLocaleDateString('id-ID', options);
+
+            // Kumpulkan Rincian Kegiatan
+            const rows = document.querySelectorAll('.kegiatan-row');
+            const kegiatanList = [];
+            rows.forEach(r => {
+                const w = r.querySelector('.kegiatan-waktu').value.trim();
+                const u = r.querySelector('.kegiatan-uraian').value.trim();
+                const s = r.querySelector('.kegiatan-status').value;
+                if (w && u) {
+                    kegiatanList.push({ waktu: w, uraian: u, status: s });
+                }
+            });
+
+            if (kegiatanList.length === 0) {
+                alert('Harap isi minimal 1 uraian kegiatan harian.');
+                return;
+            }
+
+            const payload = {
+                hariTanggal: hariTanggalStr,
+                nama: namaVal,
+                npp: nppVal,
+                unitKerja: unitVal,
+                seksi: seksiVal,
+                atasanLangsung: atasanVal,
+                direkturUmum: direkturVal,
+                kegiatan: kegiatanList,
+                fotoList: fotoList.map(f => f.base64),
+                fotoBase64: fotoList.length > 0 ? fotoList[0].base64 : ''
+            };
+
+            // Loading state
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = `
+                <div class="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Menyimpan ke Sistem...</span>
+            `;
+
+            // Cek apakah berjalan di dalam Google Apps Script Web App
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = `<i data-lucide="send" class="size-4"></i><span>Kirim Laporan Harian</span>`;
+                        if (window.lucide) lucide.createIcons();
+
+                        if (res.success) {
+                            payload.id = res.id;
+                            payload.fotoUrl = res.fotoUrl || (fotoList.length > 0 ? fotoList[0].base64 : '');
+                            laporanTerakhirData = payload;
+
+                            document.getElementById('sukses-pesan').innerText = res.message;
+                            document.getElementById('modal-sukses').classList.remove('hidden');
+                            document.getElementById('modal-sukses').classList.add('flex');
+                            resetFormState();
+                            muatDataDashboard();
+                        } else {
+                            alert('Gagal: ' + res.message);
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = `<i data-lucide="send" class="size-4"></i><span>Kirim Laporan Harian</span>`;
+                        if (window.lucide) lucide.createIcons();
+                        alert('Terjadi kesalahan sistem: ' + (err.message || err));
+                    })
+                    .simpanLaporan(payload);
+            } else {
+                // Mock Fallback untuk pengujian lokal / browser langsung
+                setTimeout(() => {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = `<i data-lucide="send" class="size-4"></i><span>Kirim Laporan Harian</span>`;
+                    if (window.lucide) lucide.createIcons();
+
+                    const mockId = 'LHR-' + Date.now().toString().slice(-8);
+                    payload.id = mockId;
+                    payload.timestamp = new Date().toLocaleString('id-ID');
+                    payload.fotoUrl = fotoList.map(f => f.base64).join('\n');
+                    payload.status = 'Menunggu Verifikasi';
+                    laporanTerakhirData = payload;
+
+                    semuaLaporanData.unshift(payload);
+
+                    document.getElementById('sukses-pesan').innerText = `Laporan berhasil disimpan (Mode Pengujian Lokal) dengan nomor: ${mockId}`;
+                    document.getElementById('modal-sukses').classList.remove('hidden');
+                    document.getElementById('modal-sukses').classList.add('flex');
+                    resetFormState();
+                    renderTable(semuaLaporanData);
+                }, 800);
+            }
+        }
+
+        function resetFormState() {
+            document.getElementById('laporan-form').reset();
+            initDateAndClock();
+            document.getElementById('select-seksi').innerHTML = '<option value="">-- Pilih Unit Kerja Terlebih Dahulu --</option>';
+            document.getElementById('input-atasan').value = '-- Pilih Unit Kerja Terlebih Dahulu --';
+            const badge = document.getElementById('npp-status-badge');
+            if (badge) badge.className = 'hidden';
+            renderDefaultKegiatan();
+            hapusFoto();
+        }
+
+        // PROTEKSI PIN ADMIN DASHBOARD
+        let isDashboardAuthenticated = false;
+
+        // Navigasi Tampilan (Tabs)
+        function switchView(viewName) {
+            if (viewName === 'dashboard' && !isDashboardAuthenticated) {
+                bukaModalPinAdmin();
+                return;
+            }
+
+            const navForm = document.getElementById('nav-form');
+            const navDashboard = document.getElementById('nav-dashboard');
+            const viewForm = document.getElementById('view-form');
+            const viewDashboard = document.getElementById('view-dashboard');
+            const topTitle = document.getElementById('top-title');
+
+            if (viewName === 'form') {
+                viewForm.classList.remove('hidden');
+                viewDashboard.classList.add('hidden');
+                navForm.className = 'nav-item flex items-center w-full rounded-xl px-4 py-3 gap-3 bg-primary/10 text-primary font-semibold transition-all duration-200';
+                navDashboard.className = 'nav-item flex items-center w-full rounded-xl px-4 py-3 gap-3 text-secondary hover:bg-muted font-medium transition-all duration-200';
+                topTitle.innerText = 'Form Laporan Kegiatan Harian';
+            } else {
+                viewForm.classList.add('hidden');
+                viewDashboard.classList.remove('hidden');
+                navDashboard.className = 'nav-item flex items-center w-full rounded-xl px-4 py-3 gap-3 bg-primary/10 text-primary font-semibold transition-all duration-200';
+                navForm.className = 'nav-item flex items-center w-full rounded-xl px-4 py-3 gap-3 text-secondary hover:bg-muted font-medium transition-all duration-200';
+                topTitle.innerText = 'Dashboard & Riwayat Laporan';
+                muatDataDashboard();
+            }
+
+            // Close sidebar on mobile
+            if (window.innerWidth < 1024) {
+                toggleSidebar();
+            }
+        }
+
+        function bukaModalPinAdmin() {
+            const modal = document.getElementById('modal-pin-admin');
+            const pinInput = document.getElementById('input-pin-admin');
+            const errorBox = document.getElementById('error-pin-admin');
+            if (errorBox) errorBox.classList.add('hidden');
+            if (pinInput) pinInput.value = '';
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => { if (pinInput) pinInput.focus(); }, 150);
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function tutupModalPinAdmin() {
+            const modal = document.getElementById('modal-pin-admin');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function toggleVisibilityPin() {
+            const pinInput = document.getElementById('input-pin-admin');
+            const iconEye = document.getElementById('icon-eye-pin');
+            if (pinInput.type === 'password') {
+                pinInput.type = 'text';
+                iconEye.setAttribute('data-lucide', 'eye-off');
+            } else {
+                pinInput.type = 'password';
+                iconEye.setAttribute('data-lucide', 'eye');
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function submitVerifikasiPin(e) {
+            e.preventDefault();
+            const pinVal = document.getElementById('input-pin-admin').value.trim();
+            const btnSubmit = document.getElementById('btn-submit-pin');
+            const errorBox = document.getElementById('error-pin-admin');
+            const errorText = document.getElementById('error-pin-text');
+
+            if (!pinVal) return;
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = `<div class="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Memverifikasi...`;
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = `<i data-lucide="key-round" class="size-4"></i><span>Buka Dashboard</span>`;
+                        if (window.lucide) lucide.createIcons();
+
+                        if (res && res.success) {
+                            isDashboardAuthenticated = true;
+                            tutupModalPinAdmin();
+                            switchView('dashboard');
+                        } else {
+                            errorText.innerText = (res && res.message) ? res.message : 'PIN Admin Salah!';
+                            errorBox.classList.remove('hidden');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = `<i data-lucide="key-round" class="size-4"></i><span>Buka Dashboard</span>`;
+                        if (window.lucide) lucide.createIcons();
+                        errorText.innerText = 'Gagal verifikasi: ' + (err.message || err);
+                        errorBox.classList.remove('hidden');
+                    })
+                    .verifikasiPinAdmin(pinVal);
+            } else {
+                // Mock Fallback untuk pengujian browser lokal
+                setTimeout(() => {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = `<i data-lucide="key-round" class="size-4"></i><span>Buka Dashboard</span>`;
+                    if (window.lucide) lucide.createIcons();
+
+                    if (pinVal === '123456') {
+                        isDashboardAuthenticated = true;
+                        tutupModalPinAdmin();
+                        switchView('dashboard');
+                    } else {
+                        errorText.innerText = 'PIN Admin Salah! (Default: 123456)';
+                        errorBox.classList.remove('hidden');
+                    }
+                }, 400);
+            }
+        }
+
+        function kunciDashboard() {
+            isDashboardAuthenticated = false;
+            switchView('form');
+            alert('Akses Dashboard berhasil dikunci.');
+        }
+
+        function bukaModalUbahPin() {
+            const modal = document.getElementById('modal-ubah-pin');
+            const errBox = document.getElementById('error-ubah-pin');
+            const sukBox = document.getElementById('sukses-ubah-pin');
+
+            if (errBox) errBox.classList.add('hidden');
+            if (sukBox) sukBox.classList.add('hidden');
+
+            document.getElementById('input-pin-lama').value = '';
+            document.getElementById('input-pin-baru').value = '';
+            document.getElementById('input-pin-konfirmasi').value = '';
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => { document.getElementById('input-pin-lama').focus(); }, 150);
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function tutupModalUbahPin() {
+            const modal = document.getElementById('modal-ubah-pin');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function submitUbahPinAdmin(e) {
+            e.preventDefault();
+            const pinLama = document.getElementById('input-pin-lama').value.trim();
+            const pinBaru = document.getElementById('input-pin-baru').value.trim();
+            const pinKonf = document.getElementById('input-pin-konfirmasi').value.trim();
+
+            const errBox = document.getElementById('error-ubah-pin');
+            const errText = document.getElementById('error-ubah-pin-text');
+            const sukBox = document.getElementById('sukses-ubah-pin');
+            const sukText = document.getElementById('sukses-ubah-pin-text');
+            const btnSubmit = document.getElementById('btn-submit-ubah-pin');
+
+            errBox.classList.add('hidden');
+            sukBox.classList.add('hidden');
+
+            if (pinBaru !== pinKonf) {
+                errText.innerText = 'PIN Baru dan Konfirmasi PIN Baru tidak cocok!';
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            if (pinBaru.length < 4) {
+                errText.innerText = 'PIN Baru minimal 4 karakter / angka!';
+                errBox.classList.remove('hidden');
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = `<div class="size-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Menyimpan...`;
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = `<i data-lucide="save" class="size-4"></i><span>Simpan PIN Baru</span>`;
+                        if (window.lucide) lucide.createIcons();
+
+                        if (res && res.success) {
+                            sukText.innerText = res.message || 'PIN Admin Berhasil Diperbarui!';
+                            sukBox.classList.remove('hidden');
+                            setTimeout(() => { tutupModalUbahPin(); }, 1500);
+                        } else {
+                            errText.innerText = (res && res.message) ? res.message : 'Gagal memperbarui PIN!';
+                            errBox.classList.remove('hidden');
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        btnSubmit.disabled = false;
+                        btnSubmit.innerHTML = `<i data-lucide="save" class="size-4"></i><span>Simpan PIN Baru</span>`;
+                        if (window.lucide) lucide.createIcons();
+                        errText.innerText = 'Gagal memperbarui PIN: ' + (err.message || err);
+                        errBox.classList.remove('hidden');
+                    })
+                    .simpanPinAdminBaru(pinLama, pinBaru);
+            } else {
+                // Mock Fallback untuk pengujian lokal
+                setTimeout(() => {
+                    btnSubmit.disabled = false;
+                    btnSubmit.innerHTML = `<i data-lucide="save" class="size-4"></i><span>Simpan PIN Baru</span>`;
+                    if (window.lucide) lucide.createIcons();
+
+                    if (pinLama !== '123456') {
+                        errText.innerText = 'PIN Admin Saat Ini / PIN Lama Salah!';
+                        errBox.classList.remove('hidden');
+                    } else {
+                        sukText.innerText = `PIN Admin berhasil diperbarui menjadi ${pinBaru} (Mode Pengujian)!`;
+                        sukBox.classList.remove('hidden');
+                        setTimeout(() => { tutupModalUbahPin(); }, 1500);
+                    }
+                }, 500);
+            }
+        }
+
+        // Muat Data Dashboard
+        function muatDataDashboard() {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function (res) {
+                        if (res && res.success) {
+                            semuaLaporanData = res.data || [];
+                            const elTotal = document.getElementById('stat-total');
+                            const elHariIni = document.getElementById('stat-hari-ini');
+                            const elVerified = document.getElementById('stat-verified');
+                            if (elTotal) elTotal.innerText = res.stats ? res.stats.total : semuaLaporanData.length;
+                            if (elHariIni) elHariIni.innerText = res.stats ? res.stats.hariIni : 0;
+                            if (elVerified) elVerified.innerText = res.stats ? res.stats.diverifikasi : 0;
+                            renderTable(semuaLaporanData);
+                        } else {
+                            console.error('Gagal mengambil data:', res);
+                            renderTable([]);
+                        }
+                    })
+                    .withFailureHandler(function (err) {
+                        console.error('Error Apps Script:', err);
+                        alert('Gagal mengambil data dari Google Sheets: ' + (err.message || err));
+                        renderTable([]);
+                    })
+                    .getDaftarLaporan({ unit: 'ALL' });
+            } else {
+                // Mock Data jika diakses di browser biasa
+                if (semuaLaporanData.length === 0) {
+                    semuaLaporanData = [
+                        {
+                            id: 'LHR-20260907-8821',
+                            timestamp: '07/09/2026 14:15:20',
+                            hariTanggal: 'Senin, 07 September 2026',
+                            nama: 'Ahmad Rusdi, S.T.',
+                            npp: '100124',
+                            unitKerja: 'SEKPER',
+                            seksi: 'KASIE. PENELITIAN DAN PENGEMBANGAN',
+                            atasanLangsung: 'Sekretaris Direktur Umum',
+                            direkturUmum: 'Direktur Umum',
+                            rincian: [
+                                { waktu: '08:00 - 09:00', uraian: 'Briefing pagi evaluasi inovasi digital', status: 'Selesai' },
+                                { waktu: '09:00 - 10:00', uraian: 'Menyusun draft rancangan kajian efisiensi air', status: 'Selesai' },
+                                { waktu: '10:00 - 11:00', uraian: 'Koordinasi data dengan bagian PDE', status: 'Selesai' },
+                                { waktu: '11:00 - 12:00', uraian: 'Analisis kelayakan sensor pipa pintar', status: 'Selesai' },
+                                { waktu: '13:30 - 14:00', uraian: 'Rapat koordinasi pimpinan sekper', status: 'Selesai' },
+                                { waktu: '14:00 - 15:00', uraian: 'Review SOP pengujian meter air', status: 'Selesai' },
+                                { waktu: '15:00 - 16:00', uraian: 'Penyusunan resume laporan harian kasie', status: 'Selesai' }
+                            ],
+                            fotoUrl: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?w=500&auto=format&fit=crop&q=60',
+                            status: 'Disetujui',
+                            catatan: 'Baik dan lengkap'
+                        },
+                        {
+                            id: 'LHR-20260907-6542',
+                            timestamp: '07/09/2026 15:02:10',
+                            hariTanggal: 'Senin, 07 September 2026',
+                            nama: 'Ir. Bambang Wijaya',
+                            npp: '100126',
+                            unitKerja: 'PRODUKSI',
+                            seksi: 'KASIE. IPA I',
+                            atasanLangsung: 'Sekretaris Direktur Umum',
+                            direkturUmum: 'Direktur Umum',
+                            rincian: [
+                                { waktu: '08:00 - 09:00', uraian: 'Pengecekan debit air intake IPA I', status: 'Selesai' },
+                                { waktu: '09:00 - 11:00', uraian: 'Pengawasan pembubuhan tawas dan klorin', status: 'Selesai' },
+                                { waktu: '11:00 - 12:00', uraian: 'Uji kekeruhan (turbidity) sampel air olahan', status: 'Selesai' },
+                                { waktu: '13:30 - 15:00', uraian: 'Pembersihan bak sedimentasi kompartemen 2', status: 'Selesai' },
+                                { waktu: '15:00 - 16:00', uraian: 'Pelaporan volume produksi harian', status: 'Selesai' }
+                            ],
+                            fotoUrl: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=500&auto=format&fit=crop&q=60',
+                            status: 'Menunggu Verifikasi',
+                            catatan: ''
+                        }
+                    ];
+                }
+                const elTotal = document.getElementById('stat-total');
+                const elHariIni = document.getElementById('stat-hari-ini');
+                const elVerified = document.getElementById('stat-verified');
+                if (elTotal) elTotal.innerText = semuaLaporanData.length;
+                if (elHariIni) elHariIni.innerText = semuaLaporanData.length;
+                if (elVerified) elVerified.innerText = 1;
+                renderTable(semuaLaporanData);
+            }
+        }
+
+        // Render Tabel Riwayat
+        function renderTable(data) {
+            const tbody = document.getElementById('table-body');
+            const countEl = document.getElementById('table-count');
+            countEl.innerText = `Menampilkan ${data.length} laporan`;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-secondary text-sm">
+                            Belum ada laporan yang tercatat atau cocok dengan filter.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            data.forEach((item) => {
+                const urls = String(item.fotoUrl || '').split(/[\n,]/).filter(u => u.trim());
+                let fotoPreview = `<span class="text-xs text-secondary">-</span>`;
+
+                if (urls.length === 1) {
+                    fotoPreview = `<a href="${urls[0]}" target="_blank" class="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline"><i data-lucide="image" class="size-3.5"></i> Lihat Foto</a>`;
+                } else if (urls.length > 1) {
+                    fotoPreview = `<a href="${urls[0]}" target="_blank" class="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline"><i data-lucide="images" class="size-3.5"></i> Lihat ${urls.length} Foto</a>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-muted/40 transition-colors';
+                tr.innerHTML = `
+                    <td class="py-3.5 px-4 font-medium text-foreground whitespace-nowrap">
+                        ${item.hariTanggal}
+                        <div class="text-[11px] text-secondary font-mono">${item.id}</div>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <p class="font-semibold text-foreground text-sm">${item.nama}</p>
+                        <p class="text-xs text-secondary font-mono">NPP: ${item.npp}</p>
+                    </td>
+                    <td class="py-3.5 px-4">
+                        <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary mb-1">${item.unitKerja}</span>
+                        <p class="text-xs text-secondary font-medium">${item.seksi}</p>
+                    </td>
+                    <td class="py-3.5 px-4 text-center">
+                        ${fotoPreview}
+                    </td>
+                    <td class="py-3.5 px-4 text-right">
+                        <button onclick="bukaModalCetak('${item.id}')"
+                            class="px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-white text-xs font-semibold inline-flex items-center gap-1.5 transition-all">
+                            <i data-lucide="printer" class="size-3.5"></i>
+                            Cetak PDF
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if (window.lucide) lucide.createIcons();
+        }
+
+        // Filter & Search Handlers
+        function handleSearch() {
+            applyFilters();
+        }
+
+        function handleFilterUnit() {
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const q = document.getElementById('search-keyword').value.toLowerCase();
+            const unit = document.getElementById('filter-unit').value;
+
+            const filtered = semuaLaporanData.filter(item => {
+                const matchUnit = (unit === 'ALL' || item.unitKerja === unit);
+                const str = `${item.nama} ${item.npp} ${item.seksi} ${item.unitKerja} ${item.hariTanggal} ${item.id}`.toLowerCase();
+                const matchQuery = str.includes(q);
+                return matchUnit && matchQuery;
+            });
+
+            renderTable(filtered);
+        }
+
+        // ==============================================================
+        // CETAK DOKUMEN SESUAI FORMAT form.docx
+        // ==============================================================
+        function bukaModalCetak(id) {
+            const data = semuaLaporanData.find(x => x.id === id);
+            if (!data) return;
+
+            // Isi Elemen Header Dokumen
+            document.getElementById('print-nama').innerText = data.nama;
+            document.getElementById('print-npp').innerText = data.npp;
+            document.getElementById('print-jabatan').innerText = data.seksi;
+            document.getElementById('print-unit').innerText = data.unitKerja;
+            document.getElementById('print-tanggal').innerText = data.hariTanggal;
+            document.getElementById('print-atasan').innerText = data.atasanLangsung || 'Sekretaris Direktur Umum';
+            document.getElementById('print-direktur').innerText = data.direkturUmum || 'Direktur Umum';
+
+            // Isi Rincian Kegiatan
+            const tbodyKegiatan = document.getElementById('print-table-kegiatan');
+            tbodyKegiatan.innerHTML = '';
+            const rincian = Array.isArray(data.rincian) ? data.rincian : [];
+            rincian.forEach((item, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="border border-black py-2 px-2 text-center">${index + 1}</td>
+                    <td class="border border-black py-2 px-3 whitespace-nowrap font-medium">${item.waktu || ''}</td>
+                    <td class="border border-black py-2 px-3">${item.uraian || ''}</td>
+                    <td class="border border-black py-2 px-3 text-center">${item.status || 'Selesai'}</td>
+                `;
+                tbodyKegiatan.appendChild(tr);
+            });
+
+            // Isi Foto Time Mark (Multi-foto Grid)
+            const fotoSection = document.getElementById('print-foto-section');
+            const fotoContainer = document.getElementById('print-foto-container');
+            fotoContainer.innerHTML = '';
+
+            const urls = String(data.fotoUrl || '').split(/[\n,]/).filter(u => u.trim());
+            if (urls.length > 0) {
+                urls.forEach((url, idx) => {
+                    const imgBox = document.createElement('div');
+                    imgBox.className = 'flex flex-col items-center bg-white p-2 rounded-lg border border-gray-300';
+                    imgBox.innerHTML = `
+                        <img src="${url}" alt="Foto Bukti ${idx + 1}" class="max-h-48 max-w-full object-contain rounded mb-1" />
+                        <span class="text-[10px] text-gray-500 font-semibold">Bukti Foto #${idx + 1}</span>
+                    `;
+                    fotoContainer.appendChild(imgBox);
+                });
+                fotoSection.classList.remove('hidden');
+            } else {
+                fotoSection.classList.add('hidden');
+            }
+
+            // Tanda Tangan
+            document.getElementById('print-ttd-nama').innerText = `( ${data.nama} )`;
+            document.getElementById('print-ttd-npp').innerText = `NPP: ${data.npp}`;
+            document.getElementById('print-ttd-atasan').innerText = data.atasanLangsung || 'Sekretaris Direktur Umum';
+
+            const tglSaja = String(data.hariTanggal).replace(/.*?, /, '');
+            document.getElementById('print-lokasi-tgl').innerText = `Makassar, ${tglSaja}`;
+
+            // Tampilkan Modal
+            document.getElementById('modal-cetak').classList.remove('hidden');
+            document.getElementById('modal-cetak').classList.add('flex');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function tutupModalCetak() {
+            document.getElementById('modal-cetak').classList.add('hidden');
+            document.getElementById('modal-cetak').classList.remove('flex');
+        }
+
+        function eksekusiCetak() {
+            const printContainer = document.getElementById('print-container');
+            if (!printContainer) return;
+            const printContent = printContainer.innerHTML;
+            const printWindow = window.open('', '_blank', 'width=900,height=800');
+            if (printWindow) {
+                const doc = printWindow.document;
+                doc.open();
+
+                const title = doc.createElement('title');
+                title.text = 'Cetak Laporan Kegiatan Harian PERUMDA';
+                doc.head.appendChild(title);
+
+                const tailwindScript = doc.createElement('script');
+                tailwindScript.src = 'https://cdn.tailwindcss.com';
+                doc.head.appendChild(tailwindScript);
+
+                const style = doc.createElement('style');
+                style.textContent = 'body { font-family: Arial, Helvetica, sans-serif; background: white; color: black; margin: 0; padding: 20px; } @media print { body { padding: 0; } @page { size: A4 portrait; margin: 15mm; } }';
+                doc.head.appendChild(style);
+
+                const wrapper = doc.createElement('div');
+                wrapper.className = 'max-w-4xl mx-auto';
+                wrapper.innerHTML = printContent;
+                doc.body.appendChild(wrapper);
+
+                doc.close();
+
+                setTimeout(function () {
+                    try {
+                        printWindow.focus();
+                        printWindow.print();
+                        printWindow.close();
+                    } catch (e) {
+                        console.error('Print window error:', e);
+                    }
+                }, 700);
+            } else {
+                window.print();
+            }
+        }
+
+        function cetakLaporanTerakhir() {
+            tutupModalSukses();
+            if (laporanTerakhirData) {
+                bukaModalCetak(laporanTerakhirData.id);
+            }
+        }
+
+        function tutupModalSukses() {
+            document.getElementById('modal-sukses').classList.add('hidden');
+            document.getElementById('modal-sukses').classList.remove('flex');
+        }
+
+        // Toggle Sidebar Mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+    </script>
 </body>
+
 </html>
 
 
