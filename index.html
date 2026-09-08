@@ -303,11 +303,10 @@
                                         class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
                                         Atasan Langsung (Mengetahui)
                                     </label>
-                                    <input type="text" id="input-atasan" value="-- Pilih Unit Kerja Terlebih Dahulu --"
-                                        readonly
+                                    <input type="text" id="input-atasan" value="Direktur Umum" readonly
                                         class="w-full rounded-xl border border-border bg-muted/80 px-4 py-3 text-sm font-semibold text-foreground cursor-not-allowed outline-none select-none" />
                                 </div>
-                                <div>
+                                <div class="hidden">
                                     <label
                                         class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
                                         Pimpinan
@@ -674,7 +673,7 @@
                         <td class="w-1/2 text-center align-top">
                             <span id="print-lokasi-tgl">Makassar, ......................... 2026</span><br>
                             Mengetahui,<br>
-                            <strong id="print-ttd-atasan">Sekretaris Direktur Umum</strong>
+                            <strong id="print-ttd-atasan">Direktur Umum</strong>
                             <br><br><br><br>
                             <strong>( ........................................ )</strong>
                         </td>
@@ -1140,23 +1139,9 @@
         }
 
         function updateAtasanLangsung() {
-            const levelEl = document.getElementById('select-level');
-            const level = levelEl ? levelEl.value : 'STAF';
-            const unit = document.getElementById('select-unit') ? document.getElementById('select-unit').value : '';
             const inputAtasan = document.getElementById('input-atasan');
-
-            if (!inputAtasan) return;
-
-            if (!unit) {
-                inputAtasan.value = '-- Pilih Unit Kerja Terlebih Dahulu --';
-                return;
-            }
-
-            if (level === 'KABAG') {
-                inputAtasan.value = 'Direksi';
-            } else {
-                // Untuk STAF dan KASIE -> Atasan Langsung adalah Kepala Bagian / Kepala Wilayah
-                inputAtasan.value = ATASAN_MAP[unit] || ('Kepala Bagian ' + unit);
+            if (inputAtasan) {
+                inputAtasan.value = 'Direktur Umum';
             }
         }
 
@@ -1450,7 +1435,8 @@
             document.getElementById('laporan-form').reset();
             initDateAndClock();
             document.getElementById('select-seksi').innerHTML = '<option value="">-- Pilih Unit Kerja Terlebih Dahulu --</option>';
-            document.getElementById('input-atasan').value = '-- Pilih Unit Kerja Terlebih Dahulu --';
+            document.getElementById('input-atasan').value = 'Direktur Umum';
+            document.getElementById('input-direktur').value = 'Direktur Umum';
             const badge = document.getElementById('npp-status-badge');
             if (badge) badge.className = 'hidden';
             renderDefaultKegiatan();
@@ -1866,7 +1852,7 @@
             document.getElementById('print-unit').innerText = data.unitKerja;
             document.getElementById('print-seksi').innerText = data.seksi;
             document.getElementById('print-tanggal').innerText = data.hariTanggal;
-            document.getElementById('print-atasan').innerText = data.atasanLangsung || 'Direksi';
+            document.getElementById('print-atasan').innerText = data.atasanLangsung || 'Direktur Umum';
             document.getElementById('print-direktur').innerText = data.direkturUmum || 'Direktur Umum';
 
             // Isi Rincian Kegiatan
@@ -1908,7 +1894,7 @@
             // Tanda Tangan
             document.getElementById('print-ttd-nama').innerText = `( ${data.nama} )`;
             document.getElementById('print-ttd-npp').innerText = `NPP: ${data.npp}`;
-            document.getElementById('print-ttd-atasan').innerText = data.atasanLangsung || 'Sekretaris Direktur Umum';
+            document.getElementById('print-ttd-atasan').innerText = data.atasanLangsung || 'Direktur Umum';
 
             const tglSaja = String(data.hariTanggal).replace(/.*?, /, '');
             document.getElementById('print-lokasi-tgl').innerText = `Makassar, ${tglSaja}`;
@@ -1989,4 +1975,3 @@
 </body>
 
 </html>
-
