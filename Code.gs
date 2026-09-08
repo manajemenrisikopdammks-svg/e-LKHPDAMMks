@@ -5,13 +5,30 @@
  * =========================================================================
  */
 
+// ID Spreadsheet Resmi PERUMDA Air Minum Kota Makassar
+const SPREADSHEET_ID = '1_h2oNUCUA80iunTYMXij889zSllm6a2zIZA4poWaUXM';
+
+function getSpreadsheetSafe() {
+  try {
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active && active.getId() === SPREADSHEET_ID) return active;
+  } catch (e) {}
+  
+  try {
+    return SpreadsheetApp.openById(SPREADSHEET_ID);
+  } catch (e) {
+    return SpreadsheetApp.getActiveSpreadsheet();
+  }
+}
+
 /**
  * 1. ENTRY POINT UTAMA WEB APP (WAJIB ADA)
  * Menampilkan antarmuka web saat URL Web App diakses di browser
  */
 function doGet(e) {
-  // Pastikan Master_Admin terbuat secara otomatis jika belum ada
+  // Pastikan Master_Admin & Struktur 14 Kolom Header terisi rapi
   try { getPinAdminFromSheet(); } catch (err) {}
+  try { perbaikiStrukturSemuaData(); } catch (err) {}
   
   const template = HtmlService.createTemplateFromFile('ui');
   return template.evaluate()
@@ -35,7 +52,7 @@ const DEFAULT_ADMIN_PIN = '123456';
 
 function getPinAdminFromSheet() {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheetSafe();
     let sheetAdmin = ss.getSheetByName('Master_Admin');
     
     // Otomatis buat sheet Master_Admin jika belum ada di spreadsheet!
@@ -100,7 +117,7 @@ function simpanPinAdminBaru(pinLama, pinBaru) {
       return { success: false, message: 'PIN Baru minimal terdiri dari 4 karakter / angka.' };
     }
     
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheetSafe();
     let sheetAdmin = ss.getSheetByName('Master_Admin');
     const nowStr = Utilities.formatDate(new Date(), 'Asia/Makassar', 'dd/MM/yyyy HH:mm:ss');
     
@@ -147,7 +164,7 @@ function getPegawaiByNpp(nppQuery) {
     const cleanQuery = String(nppQuery).trim().toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
     if (!cleanQuery) return { success: false, found: false, message: 'NPP Tidak Valid' };
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheetSafe();
     const sheetPeg = ss.getSheetByName('Master_Pegawai');
     
     if (sheetPeg && sheetPeg.getLastRow() > 1) {
@@ -182,7 +199,7 @@ function getPegawaiByNpp(nppQuery) {
  */
 function getMasterOrganisasi() {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheetSafe();
     const sheetOrg = ss.getSheetByName('Master_Organisasi');
     
     if (sheetOrg && sheetOrg.getLastRow() > 1) {
@@ -300,7 +317,7 @@ function getMasterOrganisasi() {
  */
 function simpanLaporan(payload) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheetSafe();
     let sheet = ss.getSheetByName('Laporan_Kegiatan');
     if (!sheet) {
       inisialisasiSistem();
@@ -385,13 +402,23 @@ function simpanLaporan(payload) {
     const rincianKegiatanJson = JSON.stringify(payload.kegiatan || []);
     const hariTanggal = payload.hariTanggal || Utilities.formatDate(now, 'Asia/Makassar', 'EEEE, dd MMMM yyyy');
     
-    // Susun baris baru di sheet
+    // Tentukan Nama Jabatan secara Rapi
+    const levelMap = {
+      'STAF': 'Staf / Pelaksana',
+      'KASIE': 'Kepala Seksi',
+      'KABAG': 'Kepala Bagian / Kepala Wilayah'
+    };
+    const levelKey = String(payload.level || 'STAF').toUpperCase();
+    const jabatanText = payload.jabatan || levelMap[levelKey] || 'Staf / Pelaksana';
+
+    // Susun baris baru di sheet (14 Kolom)
     const row = [
       idLaporan,
       timestamp,
       hariTanggal,
       payload.nama.trim(),
       payload.npp.trim(),
+      jabatanText,
       payload.unitKerja.trim(),
       payload.seksi.trim(),
       atasanFinal,
@@ -425,13 +452,14 @@ function simpanLaporan(payload) {
  */
 function getDaftarLaporan(filter) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheetSafe();
     const sheet = ss.getSheetByName('Laporan_Kegiatan');
     if (!sheet || sheet.getLastRow() <= 1) {
       return { success: true, data: [], stats: { total: 0, hariIni: 0, diverifikasi: 0, pending: 0 } };
     }
     
-    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 13).getValues();
+    const lastCol = Math.max(14, sheet.getLastColumn());
+    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
     const todayStr = Utilities.formatDate(new Date(), 'Asia/Makassar', 'dd/MM/yyyy');
     
     let total = 0;
@@ -447,7 +475,7 @@ function getDaftarLaporan(filter) {
       
       total++;
       
-      // Sanitasi Tanggal agar SELALU STRING (Menghindari serialization error pada google.script.run)
+      // Sanitasi Tanggal agar SELALU STRING
       let tsVal = r[1];
       if (tsVal instanceof Date) {
         tsVal = Utilities.formatDate(tsVal, 'Asia/Makassar', 'dd/MM/yyyy HH:mm:ss');
@@ -462,20 +490,33 @@ function getDaftarLaporan(filter) {
         tglVal = String(tglVal || '');
       }
       
+      // Cek apakah baris ini memuat 14 kolom (Format Baru dengan Jabatan terpisah)
+      const hasJabatanCol = r.length >= 14 && (r[13] !== undefined || r[5] === 'Staf / Pelaksana' || r[5] === 'Kepala Seksi' || r[5] === 'Kepala Bagian / Kepala Wilayah');
+      const jabatanVal = hasJabatanCol ? String(r[5] || 'Staf / Pelaksana') : 'Staf / Pelaksana';
+      const unitVal = hasJabatanCol ? String(r[6] || '') : String(r[5] || '');
+      const seksiVal = hasJabatanCol ? String(r[7] || '') : String(r[6] || '');
+      const atasanVal = hasJabatanCol ? String(r[8] || '') : String(r[7] || '');
+      const dirVal = hasJabatanCol ? String(r[9] || '') : String(r[8] || '');
+      const rincianVal = hasJabatanCol ? r[10] : r[9];
+      const fotoVal = hasJabatanCol ? r[11] : r[10];
+      const statusVal = hasJabatanCol ? r[12] : r[11];
+      const catatanVal = hasJabatanCol ? r[13] : r[12];
+      
       const item = {
         id: String(r[0]),
         timestamp: tsVal,
         hariTanggal: tglVal,
         nama: String(r[3] || ''),
         npp: String(r[4] || ''),
-        unitKerja: String(r[5] || ''),
-        seksi: String(r[6] || ''),
-        atasanLangsung: String(r[7] || ''),
-        direkturUmum: String(r[8] || ''),
-        rincian: parseJsonSafe(r[9]),
-        fotoUrl: String(r[10] || ''),
-        status: String(r[11] || 'Menunggu Verifikasi'),
-        catatan: String(r[12] || '')
+        jabatan: jabatanVal,
+        unitKerja: unitVal,
+        seksi: seksiVal,
+        atasanLangsung: atasanVal,
+        direkturUmum: dirVal,
+        rincian: parseJsonSafe(rincianVal),
+        fotoUrl: String(fotoVal || ''),
+        status: String(statusVal || 'Menunggu Verifikasi'),
+        catatan: String(catatanVal || '')
       };
       
       if (tsVal.indexOf(todayStr) !== -1 || tglVal.indexOf(todayStr) !== -1) {
@@ -494,7 +535,7 @@ function getDaftarLaporan(filter) {
       }
       if (filter && filter.search) {
         const query = String(filter.search).toLowerCase();
-        const fullText = (item.nama + ' ' + item.npp + ' ' + item.seksi + ' ' + item.hariTanggal + ' ' + item.id).toLowerCase();
+        const fullText = (item.nama + ' ' + item.npp + ' ' + item.jabatan + ' ' + item.seksi + ' ' + item.hariTanggal + ' ' + item.id).toLowerCase();
         if (fullText.indexOf(query) === -1) match = false;
       }
       
@@ -524,17 +565,29 @@ function getDaftarLaporan(filter) {
  */
 function getDetailLaporan(id) {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheetSafe();
     const sheet = ss.getSheetByName('Laporan_Kegiatan');
     if (!sheet || sheet.getLastRow() <= 1) return { success: false, message: 'Data tidak ditemukan.' };
     
-    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 13).getValues();
+    const lastCol = Math.max(14, sheet.getLastColumn());
+    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol).getValues();
     for (let i = 0; i < rows.length; i++) {
       if (String(rows[i][0]) === String(id)) {
         const r = rows[i];
         
         let tsVal = r[1] instanceof Date ? Utilities.formatDate(r[1], 'Asia/Makassar', 'dd/MM/yyyy HH:mm:ss') : String(r[1] || '');
         let tglVal = r[2] instanceof Date ? Utilities.formatDate(r[2], 'Asia/Makassar', 'EEEE, dd MMMM yyyy') : String(r[2] || '');
+        
+        const hasJabatanCol = r.length >= 14 && (r[13] !== undefined || r[5] === 'Staf / Pelaksana' || r[5] === 'Kepala Seksi' || r[5] === 'Kepala Bagian / Kepala Wilayah');
+        const jabatanVal = hasJabatanCol ? String(r[5] || 'Staf / Pelaksana') : 'Staf / Pelaksana';
+        const unitVal = hasJabatanCol ? String(r[6] || '') : String(r[5] || '');
+        const seksiVal = hasJabatanCol ? String(r[7] || '') : String(r[6] || '');
+        const atasanVal = hasJabatanCol ? String(r[8] || '') : String(r[7] || '');
+        const dirVal = hasJabatanCol ? String(r[9] || '') : String(r[8] || '');
+        const rincianVal = hasJabatanCol ? r[10] : r[9];
+        const fotoVal = hasJabatanCol ? r[11] : r[10];
+        const statusVal = hasJabatanCol ? r[12] : r[11];
+        const catatanVal = hasJabatanCol ? r[13] : r[12];
         
         return {
           success: true,
@@ -544,14 +597,15 @@ function getDetailLaporan(id) {
             hariTanggal: tglVal,
             nama: String(r[3] || ''),
             npp: String(r[4] || ''),
-            unitKerja: String(r[5] || ''),
-            seksi: String(r[6] || ''),
-            atasanLangsung: String(r[7] || ''),
-            direkturUmum: String(r[8] || ''),
-            rincian: parseJsonSafe(r[9]),
-            fotoUrl: String(r[10] || ''),
-            status: String(r[11] || 'Menunggu Verifikasi'),
-            catatan: String(r[12] || '')
+            jabatan: jabatanVal,
+            unitKerja: unitVal,
+            seksi: seksiVal,
+            atasanLangsung: atasanVal,
+            direkturUmum: dirVal,
+            rincian: parseJsonSafe(rincianVal),
+            fotoUrl: String(fotoVal || ''),
+            status: String(statusVal || 'Menunggu Verifikasi'),
+            catatan: String(catatanVal || '')
           }
         };
       }
@@ -566,7 +620,7 @@ function getDetailLaporan(id) {
  * 6. INISIALISASI STRUKTUR SPREADSHEET (JALANKAN 1 KALI)
  */
 function inisialisasiSistem() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheetSafe();
   
   // Tab Laporan_Kegiatan
   let sheetLaporan = ss.getSheetByName('Laporan_Kegiatan');
@@ -574,7 +628,7 @@ function inisialisasiSistem() {
     sheetLaporan = ss.insertSheet('Laporan_Kegiatan');
     const headers = [
       'ID Laporan', 'Timestamp', 'Hari / Tanggal', 'Nama Pegawai', 'NPP',
-      'Unit Kerja', 'Seksi / Jabatan', 'Atasan Langsung', 'Direktur Umum',
+      'Jabatan', 'Unit Kerja', 'Seksi', 'Atasan Langsung', 'Direktur Umum',
       'Rincian Kegiatan (JSON)', 'Foto Time Mark URL', 'Status Approval', 'Catatan Atasan'
     ];
     sheetLaporan.appendRow(headers);
@@ -712,7 +766,7 @@ function appendRowToUnitSheet(ss, unitKerja, row) {
   let sheet = ss.getSheetByName(sheetName);
   const headers = [
     'ID Laporan', 'Timestamp', 'Hari / Tanggal', 'Nama Pegawai', 'NPP',
-    'Unit Kerja', 'Seksi / Jabatan', 'Atasan Langsung', 'Direktur Umum',
+    'Jabatan', 'Unit Kerja', 'Seksi', 'Atasan Langsung', 'Direktur Umum',
     'Rincian Kegiatan (JSON)', 'Foto Time Mark URL', 'Status Approval', 'Catatan Atasan'
   ];
   
@@ -742,7 +796,7 @@ function appendRowToUnitSheet(ss, unitKerja, row) {
  */
 function organisirSistemRapi() {
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const ss = getSpreadsheetSafe();
     let sheetMaster = ss.getSheetByName('Laporan_Kegiatan');
     if (!sheetMaster || sheetMaster.getLastRow() <= 1) {
       Logger.log('Belum ada data di Laporan_Kegiatan untuk diorganisir.');
@@ -781,4 +835,66 @@ function escapeHtml(text) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+/**
+ * OTOMATIS MEMPERBAIKI BANNER HEADER (14 KOLOM RESMI) & STRUKTUR BARIS TERGESER
+ */
+function perbaikiStrukturSemuaData() {
+  try {
+    const ss = getSpreadsheetSafe();
+    const OFFICIAL_HEADERS = [
+      'ID Laporan', 'Timestamp', 'Hari / Tanggal', 'Nama Pegawai', 'NPP',
+      'Jabatan', 'Unit Kerja', 'Seksi', 'Atasan Langsung', 'Direktur Umum',
+      'Rincian Kegiatan (JSON)', 'Foto Time Mark URL', 'Status Approval', 'Catatan Atasan'
+    ];
+    
+    const sheets = ss.getSheets();
+    sheets.forEach(sheet => {
+      const name = sheet.getName();
+      if (name === 'Master_Organisasi' || name === 'Master_Pegawai' || name === 'Master_Admin') return;
+      
+      if (sheet.getLastRow() < 1) return;
+      
+      // Update Header (Baris 1) ke 14 Kolom Resmi
+      const hRange = sheet.getRange(1, 1, 1, OFFICIAL_HEADERS.length);
+      hRange.setValues([OFFICIAL_HEADERS]);
+      hRange.setBackground('#165DFF').setFontColor('#FFFFFF').setFontWeight('bold');
+      sheet.setFrozenRows(1);
+      
+      // Perbaiki Baris Data (Baris 2 ke bawah) Jika Menggunakan Format 13 Kolom Lama
+      if (sheet.getLastRow() > 1) {
+        const lastCol = Math.max(14, sheet.getLastColumn());
+        const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol);
+        const values = range.getValues();
+        let modified = false;
+        
+        for (let i = 0; i < values.length; i++) {
+          const r = values[i];
+          if (!r[0]) continue;
+          
+          const valF = String(r[5] || '').trim();
+          const isUnitInColF = (
+            valF.indexOf('UMUM') !== -1 || valF.indexOf('SPI') !== -1 || valF.indexOf('SEKPER') !== -1 ||
+            valF.indexOf('PERLENGKAPAN') !== -1 || valF.indexOf('ANGGARAN') !== -1 || valF.indexOf('VERIFIKASI') !== -1 ||
+            valF.indexOf('PERENCANAAN') !== -1 || valF.indexOf('DISTRIBUSI') !== -1 || valF.indexOf('PRODUKSI') !== -1 ||
+            valF.indexOf('WILAYAH') !== -1
+          );
+          
+          if (isUnitInColF) {
+            // Sisipkan 'Staf / Pelaksana' pada Kolom F (index 5) agar bergeser rapi ke kanan
+            r.splice(5, 0, 'Staf / Pelaksana');
+            values[i] = r.slice(0, 14);
+            modified = true;
+          }
+        }
+        
+        if (modified) {
+          range.setValues(values);
+        }
+      }
+    });
+  } catch (err) {
+    Logger.log('Error perbaikiStrukturSemuaData: ' + err.toString());
+  }
 }

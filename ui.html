@@ -7,7 +7,8 @@
     <title>Sistem Laporan Kegiatan Harian - PERUMDA Air Minum Kota Makassar</title>
     <meta name="description"
         content="Aplikasi Laporan Kegiatan Harian Pegawai PERUMDA Air Minum Kota Makassar berbasis Google Apps Script Web App.">
-    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Deca:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -38,17 +39,26 @@
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
 
         /* Media Print Khusus untuk Format Resmi form.docx */
         @media print {
             body * {
                 visibility: hidden;
             }
-            #print-container, #print-container * {
+
+            #print-container,
+            #print-container * {
                 visibility: visible;
             }
+
             #print-container {
                 position: absolute;
                 left: 0;
@@ -62,6 +72,7 @@
                 box-shadow: none !important;
                 border: none !important;
             }
+
             .no-print {
                 display: none !important;
             }
@@ -81,8 +92,8 @@
             <!-- Top Bar / Logo -->
             <div class="flex items-center justify-between border-b border-border h-[86px] px-5 gap-3">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-bold text-lg">
-                        <i data-lucide="droplet" class="w-6 h-6 text-primary"></i>
+                    <div class="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-bold text-lg overflow-hidden shrink-0">
+                        <img src="logo.png" alt="PERUMDA Logo" class="w-8 h-8 object-contain" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/manajemenrisikopdammks-svg/e-LKHDAMMKs/main/logo.png';" />
                     </div>
                     <div class="flex flex-col">
                         <h1 class="font-bold text-base leading-tight text-foreground">PERUMDA</h1>
@@ -98,8 +109,9 @@
             <!-- Navigation Links -->
             <div class="flex flex-col p-4 gap-6 overflow-y-auto flex-1">
                 <div class="flex flex-col gap-2">
-                    <span class="text-[11px] font-semibold text-secondary uppercase tracking-wider px-3">Menu Utama</span>
-                    
+                    <span class="text-[11px] font-semibold text-secondary uppercase tracking-wider px-3">Menu
+                        Utama</span>
+
                     <button onclick="switchView('form')" id="nav-form"
                         class="nav-item flex items-center w-full rounded-xl px-4 py-3 gap-3 bg-primary/10 text-primary font-semibold transition-all duration-200">
                         <i data-lucide="file-plus" class="size-5 shrink-0"></i>
@@ -123,12 +135,14 @@
         <!-- MAIN CONTENT -->
         <main class="flex-1 lg:ml-[280px] flex flex-col bg-muted min-h-screen overflow-x-hidden">
             <!-- Top Navbar -->
-            <header class="flex items-center justify-between w-full h-[86px] shrink-0 border-b border-border bg-white px-5 md:px-8">
+            <header
+                class="flex items-center justify-between w-full h-[86px] shrink-0 border-b border-border bg-white px-5 md:px-8">
                 <div class="flex items-center gap-3">
                     <button onclick="toggleSidebar()" aria-label="Buka menu"
                         class="lg:hidden size-10 flex items-center justify-center rounded-xl bg-muted hover:bg-border text-foreground transition-all">
                         <i data-lucide="menu" class="size-5"></i>
                     </button>
+                    <img src="logo.png" alt="PERUMDA Logo" class="size-10 object-contain rounded-xl shrink-0 hidden sm:block" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/manajemenrisikopdammks-svg/e-LKHDAMMKs/main/logo.png';" />
                     <div>
                         <h2 id="top-title" class="font-bold text-xl text-foreground">Form Laporan Kegiatan Harian</h2>
                         <p class="text-xs text-secondary hidden sm:block">Perumda Air Minum Kota Makassar</p>
@@ -142,7 +156,8 @@
                             <span class="size-2 rounded-full bg-success animate-pulse"></span> Sistem Online
                         </p>
                     </div>
-                    <div class="size-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm">
+                    <div
+                        class="size-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm">
                         <i data-lucide="user" class="size-5"></i>
                     </div>
                 </div>
@@ -155,28 +170,32 @@
                 <!-- VIEW 1: FORM INPUT LAPORAN HARIAN                             -->
                 <!-- ============================================================== -->
                 <div id="view-form" class="max-w-4xl mx-auto flex flex-col gap-6">
-                    
+
                     <!-- Alert / Panduan Singkat -->
                     <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 md:p-5 flex items-start gap-4">
-                        <div class="size-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 mt-0.5">
+                        <div
+                            class="size-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 mt-0.5">
                             <i data-lucide="info" class="size-5"></i>
                         </div>
                         <div class="flex-1 text-sm text-blue-900">
                             <h4 class="font-bold text-base mb-1">Pengisian Laporan Harian</h4>
                             <p class="text-blue-800/80 leading-relaxed">
-                                Pastikan memilih <strong>Unit Kerja</strong> terlebih dahulu agar pilihan <strong>Seksi/Jabatan</strong> tersaring secara otomatis. Jangan lupa melampirkan <strong>Foto Time Mark</strong> sebagai bukti kehadiran/kegiatan.
+                                Pastikan memilih <strong>Unit Kerja</strong> terlebih dahulu agar pilihan
+                                <strong>Seksi/Jabatan</strong> tersaring secara otomatis. Jangan lupa melampirkan
+                                <strong>Foto Time Mark</strong> sebagai bukti kehadiran/kegiatan.
                             </p>
                         </div>
                     </div>
 
                     <!-- Form Body -->
                     <form id="laporan-form" onsubmit="handleSubmitLaporan(event)" class="flex flex-col gap-6">
-                        
+
                         <!-- CARD 1: IDENTITAS PEGAWAI & UNIT KERJA -->
                         <div class="bg-white rounded-2xl border border-border p-6 md:p-7 shadow-sm flex flex-col gap-5">
                             <div class="flex items-center justify-between border-b border-border pb-4">
                                 <div class="flex items-center gap-2.5">
-                                    <div class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                    <div
+                                        class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                                         <i data-lucide="user-check" class="size-4"></i>
                                     </div>
                                     <h3 class="font-bold text-base text-foreground">Identitas & Unit Kerja Pegawai</h3>
@@ -187,7 +206,8 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <!-- Hari / Tanggal -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
                                         Hari / Tanggal <span class="text-error">*</span>
                                     </label>
                                     <div class="relative">
@@ -198,21 +218,39 @@
 
                                 <!-- NPP -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
                                         NPP (Nomor Pokok Pegawai) <span class="text-error">*</span>
                                     </label>
                                     <div class="relative">
-                                        <input type="text" id="input-npp" required placeholder="Contoh: 100124" onchange="handleNppChange()" oninput="handleNppInput()"
+                                        <input type="text" id="input-npp" required placeholder="Contoh: 100124"
+                                            onchange="handleNppChange()" oninput="handleNppInput()"
                                             class="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all" />
                                     </div>
-                                    <p id="npp-status-badge" class="hidden text-[11px] font-semibold mt-1.5 flex items-center gap-1">
+                                    <p id="npp-status-badge"
+                                        class="hidden text-[11px] font-semibold mt-1.5 flex items-center gap-1">
                                         <!-- Status dimuat dinamis -->
                                     </p>
                                 </div>
 
+                                <!-- Jabatan Pegawai -->
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                        Jabatan <span class="text-error">*</span>
+                                    </label>
+                                    <select id="select-level" required onchange="handleLevelChange()"
+                                        class="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm font-medium text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
+                                        <option value="STAF">Staf / Pelaksana</option>
+                                        <option value="KASIE">Kepala Seksi</option>
+                                        <option value="KABAG">Kepala Bagian / Kepala Wilayah</option>
+                                    </select>
+                                </div>
+
                                 <!-- Nama Pegawai -->
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                <div>
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
                                         Nama Lengkap & Gelar <span class="text-error">*</span>
                                     </label>
                                     <input type="text" id="input-nama" required placeholder="Nama lengkap pegawai"
@@ -221,7 +259,8 @@
 
                                 <!-- Unit Kerja (Dropdown Utama) -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
                                         Unit Kerja / Bagian <span class="text-error">*</span>
                                     </label>
                                     <select id="select-unit" required onchange="handleUnitChange()"
@@ -234,7 +273,8 @@
                                         <option value="ANGGARAN DAN PERBENDAHARAAN">ANGGARAN DAN PERBENDAHARAAN</option>
                                         <option value="VERIFIKASI DAN AKUNTANSI">VERIFIKASI DAN AKUNTANSI</option>
                                         <option value="PERENCANAAN TEKNIK">PERENCANAAN TEKNIK</option>
-                                        <option value="DISTRIBUSI DAN KEHILANGAN AIR">DISTRIBUSI DAN KEHILANGAN AIR</option>
+                                        <option value="DISTRIBUSI DAN KEHILANGAN AIR">DISTRIBUSI DAN KEHILANGAN AIR
+                                        </option>
                                         <option value="PRODUKSI">PRODUKSI</option>
                                         <option value="WILAYAH 1">WILAYAH 1</option>
                                         <option value="WILAYAH 2">WILAYAH 2</option>
@@ -245,12 +285,13 @@
                                     </select>
                                 </div>
 
-                                <!-- Seksi / Jabatan (Cascading Dropdown) -->
+                                <!-- Seksi (Cascading Dropdown) -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
-                                        Seksi / Jabatan <span class="text-error">*</span>
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                        Seksi <span class="text-error">*</span>
                                     </label>
-                                    <select id="select-seksi" required
+                                    <select id="select-seksi" required onchange="handleSeksiChange()"
                                         class="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all">
                                         <option value="">-- Pilih Unit Kerja Terlebih Dahulu --</option>
                                     </select>
@@ -258,14 +299,16 @@
 
                                 <!-- Atasan Langsung & Direktur Umum -->
                                 <div>
-                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
                                         Atasan Langsung (Mengetahui)
                                     </label>
-                                    <input type="text" id="input-atasan" value="-- Pilih Unit Kerja Terlebih Dahulu --" readonly
+                                    <input type="text" id="input-atasan" value="Direktur Umum" readonly
                                         class="w-full rounded-xl border border-border bg-muted/80 px-4 py-3 text-sm font-semibold text-foreground cursor-not-allowed outline-none select-none" />
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
+                                <div class="hidden">
+                                    <label
+                                        class="block text-xs font-semibold text-secondary uppercase tracking-wider mb-2">
                                         Pimpinan
                                     </label>
                                     <input type="text" id="input-direktur" value="Direktur Umum" readonly
@@ -276,14 +319,18 @@
 
                         <!-- CARD 2: RINCIAN KEGIATAN HARIAN -->
                         <div class="bg-white rounded-2xl border border-border p-6 md:p-7 shadow-sm flex flex-col gap-5">
-                            <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-4 gap-2">
+                            <div
+                                class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-4 gap-2">
                                 <div class="flex items-center gap-2.5">
-                                    <div class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                    <div
+                                        class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                                         <i data-lucide="clock" class="size-4"></i>
                                     </div>
                                     <div>
-                                        <h3 class="font-bold text-base text-foreground">Rincian Kegiatan Harian Pegawai</h3>
-                                        <p class="text-xs text-secondary">Uraian hasil pekerjaan per sesi jam kerja (08:00 - 16:00)</p>
+                                        <h3 class="font-bold text-base text-foreground">Rincian Kegiatan Harian Pegawai
+                                        </h3>
+                                        <p class="text-xs text-secondary">Uraian hasil pekerjaan per sesi jam kerja
+                                            (08:00 - 16:00)</p>
                                     </div>
                                 </div>
                                 <button type="button" onclick="tambahBarisKegiatan()"
@@ -303,40 +350,51 @@
                         <div class="bg-white rounded-2xl border border-border p-6 md:p-7 shadow-sm flex flex-col gap-5">
                             <div class="flex items-center justify-between border-b border-border pb-4">
                                 <div class="flex items-center gap-2.5">
-                                    <div class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                                    <div
+                                        class="size-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
                                         <i data-lucide="camera" class="size-4"></i>
                                     </div>
                                     <div>
-                                        <h3 class="font-bold text-base text-foreground">Lampiran Bukti Foto Time Mark</h3>
-                                        <p class="text-xs text-secondary">Foto dokumentasi / presensi time mark (Bisa upload 1 atau beberapa foto sekaligus)</p>
+                                        <h3 class="font-bold text-base text-foreground">Lampiran Bukti Foto Time Mark
+                                        </h3>
+                                        <p class="text-xs text-secondary">Foto dokumentasi / presensi time mark (Bisa
+                                            upload 1 atau beberapa foto sekaligus)</p>
                                     </div>
                                 </div>
-                                <span id="foto-counter-badge" class="text-xs text-primary font-bold bg-primary/10 px-2.5 py-1 rounded-full">
+                                <span id="foto-counter-badge"
+                                    class="text-xs text-primary font-bold bg-primary/10 px-2.5 py-1 rounded-full">
                                     0 Foto Terpilih
                                 </span>
                             </div>
 
                             <!-- Upload Box -->
-                            <div class="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl p-6 hover:border-primary/50 transition-colors bg-muted/30 relative">
-                                <input type="file" id="foto-input" accept="image/*" multiple onchange="handleFotoChange(event)"
+                            <div
+                                class="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-2xl p-6 hover:border-primary/50 transition-colors bg-muted/30 relative">
+                                <input type="file" id="foto-input" accept="image/*" multiple
+                                    onchange="handleFotoChange(event)"
                                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                                
+
                                 <div id="upload-placeholder" class="flex flex-col items-center text-center gap-3">
-                                    <div class="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                                    <div
+                                        class="size-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
                                         <i data-lucide="image-plus" class="size-7"></i>
                                     </div>
                                     <div>
-                                        <p class="font-semibold text-sm text-foreground">Klik atau Tarik Foto Time Mark ke sini</p>
-                                        <p class="text-xs text-secondary mt-1">Anda bisa memilih lebih dari 1 foto sekaligus dari galeri / kamera</p>
+                                        <p class="font-semibold text-sm text-foreground">Klik atau Tarik Foto Time Mark
+                                            ke sini</p>
+                                        <p class="text-xs text-secondary mt-1">Anda bisa memilih lebih dari 1 foto
+                                            sekaligus dari galeri / kamera</p>
                                     </div>
-                                    <button type="button" class="px-4 py-2 bg-white rounded-xl border border-border text-xs font-semibold text-foreground shadow-sm hover:bg-muted pointer-events-none">
+                                    <button type="button"
+                                        class="px-4 py-2 bg-white rounded-xl border border-border text-xs font-semibold text-foreground shadow-sm hover:bg-muted pointer-events-none">
                                         Pilih Foto Kamera / File (Bisa Banyak)
                                     </button>
                                 </div>
 
                                 <!-- Multi-Image Preview Gallery -->
                                 <div id="preview-container" class="hidden flex-col gap-4 w-full z-20">
-                                    <div id="preview-gallery" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 w-full">
+                                    <div id="preview-gallery"
+                                        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 w-full">
                                         <!-- Gambar preview dimuat secara dinamis -->
                                     </div>
                                     <div class="flex items-center justify-between pt-2 border-t border-border w-full">
@@ -371,12 +429,14 @@
                 <!-- VIEW 2: DASHBOARD MONITORING & RIWAYAT LAPORAN                -->
                 <!-- ============================================================== -->
                 <div id="view-dashboard" class="hidden flex flex-col gap-6">
-                    
+
                     <!-- Metric Cards (3 Cards) -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-white p-6 rounded-2xl border border-border flex items-center justify-between shadow-sm">
+                        <div
+                            class="bg-white p-6 rounded-2xl border border-border flex items-center justify-between shadow-sm">
                             <div>
-                                <p class="text-xs font-semibold text-secondary uppercase tracking-wider">Total Laporan</p>
+                                <p class="text-xs font-semibold text-secondary uppercase tracking-wider">Total Laporan
+                                </p>
                                 <h3 id="stat-total" class="text-2xl font-bold text-foreground mt-1">0</h3>
                                 <p class="text-[11px] text-secondary mt-1">Tercatat di Database</p>
                             </div>
@@ -385,9 +445,11 @@
                             </div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-2xl border border-border flex items-center justify-between shadow-sm">
+                        <div
+                            class="bg-white p-6 rounded-2xl border border-border flex items-center justify-between shadow-sm">
                             <div>
-                                <p class="text-xs font-semibold text-secondary uppercase tracking-wider">Laporan Hari Ini</p>
+                                <p class="text-xs font-semibold text-secondary uppercase tracking-wider">Laporan Hari
+                                    Ini</p>
                                 <h3 id="stat-hari-ini" class="text-2xl font-bold text-success mt-1">0</h3>
                                 <p class="text-[11px] text-secondary mt-1">Masuk hari ini</p>
                             </div>
@@ -396,7 +458,8 @@
                             </div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-2xl border border-border flex items-center justify-between shadow-sm">
+                        <div
+                            class="bg-white p-6 rounded-2xl border border-border flex items-center justify-between shadow-sm">
                             <div>
                                 <p class="text-xs font-semibold text-secondary uppercase tracking-wider">Unit Kerja</p>
                                 <h3 id="stat-unit" class="text-2xl font-bold text-warning mt-1">15</h3>
@@ -409,7 +472,8 @@
                     </div>
 
                     <!-- Filter & Search Bar -->
-                    <div class="bg-white rounded-2xl border border-border p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div
+                        class="bg-white rounded-2xl border border-border p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
                         <div class="flex flex-1 items-center gap-3 bg-muted/60 rounded-xl px-4 py-2.5 w-full md:w-auto">
                             <i data-lucide="search" class="size-4 text-secondary"></i>
                             <input type="text" id="search-keyword" oninput="handleSearch()"
@@ -464,16 +528,18 @@
                     <div class="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
                         <div class="p-5 border-b border-border flex items-center justify-between">
                             <h3 class="font-bold text-base text-foreground">Riwayat Laporan Pegawai</h3>
-                            <span id="table-count" class="text-xs text-secondary font-medium">Menampilkan 0 laporan</span>
+                            <span id="table-count" class="text-xs text-secondary font-medium">Menampilkan 0
+                                laporan</span>
                         </div>
 
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-sm">
-                                <thead class="bg-muted/60 text-secondary uppercase text-[11px] font-semibold tracking-wider border-b border-border">
+                                <thead
+                                    class="bg-muted/60 text-secondary uppercase text-[11px] font-semibold tracking-wider border-b border-border">
                                     <tr>
                                         <th class="py-3.5 px-4">Hari / Tanggal</th>
                                         <th class="py-3.5 px-4">Pegawai</th>
-                                        <th class="py-3.5 px-4">Unit Kerja & Seksi</th>
+                                        <th class="py-3.5 px-4">Unit Kerja & Seksi / Jabatan</th>
                                         <th class="py-3.5 px-4 text-center">Foto Bukti</th>
                                         <th class="py-3.5 px-4 text-right">Aksi</th>
                                     </tr>
@@ -497,8 +563,10 @@
     <!-- ============================================================== -->
     <!-- MODAL 1: FORMAT CETAK RESMI form.docx (PRINT / EXPORT PDF)     -->
     <!-- ============================================================== -->
-    <div id="modal-cetak" class="fixed inset-0 bg-black/70 z-[100] hidden items-center justify-center p-2 sm:p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+    <div id="modal-cetak"
+        class="fixed inset-0 bg-black/70 z-[100] hidden items-center justify-center p-2 sm:p-4 overflow-y-auto">
+        <div
+            class="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden my-auto">
             <!-- Modal Header (No Print) -->
             <div class="flex items-center justify-between p-4 border-b border-border bg-card-grey no-print">
                 <div class="flex items-center gap-2">
@@ -519,10 +587,16 @@
             </div>
 
             <!-- Printable Document Body (A4 Paper Simulation) -->
-            <div class="p-6 sm:p-10 overflow-y-auto flex-1 bg-white text-black font-sans leading-relaxed" id="print-container">
-                <!-- Judul Dokumen Sesuai form.docx -->
-                <div class="text-center font-bold text-base sm:text-lg underline uppercase mb-6 tracking-wide">
-                    FORMAT LAPORAN KEGIATAN HARIAN PEGAWAI<br>PERUMDA AIR MINUM KOTA MAKASSAR
+            <div class="p-6 sm:p-10 overflow-y-auto flex-1 bg-white text-black font-sans leading-relaxed"
+                id="print-container">
+                <!-- Kop Dokumen Resmi PERUMDA -->
+                <div class="flex items-center justify-between border-b-2 border-black pb-4 mb-6">
+                    <img src="logo.png" alt="Logo PERUMDA" class="h-14 sm:h-16 w-auto object-contain shrink-0" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/manajemenrisikopdammks-svg/e-LKHDAMMKs/main/logo.png';" />
+                    <div class="text-center flex-1 px-2">
+                        <h2 class="font-bold text-base sm:text-lg tracking-wide uppercase leading-tight">PERUMDA AIR MINUM KOTA MAKASSAR</h2>
+                        <h3 class="font-bold text-xs sm:text-sm underline uppercase mt-1">FORMAT LAPORAN KEGIATAN HARIAN PEGAWAI</h3>
+                    </div>
+                    <div class="w-14 sm:w-16 shrink-0"></div>
                 </div>
 
                 <!-- Tabel Meta Pegawai -->
@@ -547,14 +621,17 @@
                         <td class="py-1 font-bold">Jabatan</td>
                         <td class="py-1">:</td>
                         <td class="py-1" id="print-jabatan">-</td>
-                        <td class="py-1 font-bold">Direktur Umum</td>
+                        <td class="py-1 font-bold">Pimpinan</td>
                         <td class="py-1">:</td>
                         <td class="py-1" id="print-direktur">Direktur Umum</td>
                     </tr>
                     <tr>
                         <td class="py-1 font-bold">Unit Kerja</td>
                         <td class="py-1">:</td>
-                        <td colspan="4" class="py-1 font-semibold" id="print-unit">-</td>
+                        <td class="py-1" id="print-unit">-</td>
+                        <td class="py-1 font-bold">Seksi</td>
+                        <td class="py-1">:</td>
+                        <td class="py-1" id="print-seksi">-</td>
                     </tr>
                 </table>
 
@@ -577,7 +654,8 @@
                 <!-- Bagian B: Lampiran Foto Time Mark -->
                 <div id="print-foto-section" class="mb-6 page-break-inside-avoid">
                     <div class="font-bold text-xs sm:text-sm mb-2">B. LAMPIRAN BUKTI KEGIATAN (FOTO TIME MARK)</div>
-                    <div id="print-foto-container" class="grid grid-cols-2 gap-3 sm:gap-4 border border-dashed border-gray-300 p-3 rounded-xl bg-gray-50">
+                    <div id="print-foto-container"
+                        class="grid grid-cols-2 gap-3 sm:gap-4 border border-dashed border-gray-300 p-3 rounded-xl bg-gray-50">
                         <!-- Dimuat secara dinamis -->
                     </div>
                 </div>
@@ -595,7 +673,7 @@
                         <td class="w-1/2 text-center align-top">
                             <span id="print-lokasi-tgl">Makassar, ......................... 2026</span><br>
                             Mengetahui,<br>
-                            <strong id="print-ttd-atasan">Sekretaris Direktur Umum</strong>
+                            <strong id="print-ttd-atasan">Direktur Umum</strong>
                             <br><br><br><br>
                             <strong>( ........................................ )</strong>
                         </td>
@@ -635,17 +713,19 @@
     <!-- MODAL 3: PROTEKSI PIN ADMIN / SUPERADMIN DASHBOARD            -->
     <!-- ============================================================== -->
     <div id="modal-pin-admin" class="fixed inset-0 bg-black/70 z-[110] hidden items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
+        <div
+            class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
             <!-- Decorative Accent -->
             <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-primary via-blue-500 to-indigo-600"></div>
 
             <div class="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4 text-primary">
                 <i data-lucide="lock" class="size-8"></i>
             </div>
-            
+
             <h3 class="font-bold text-xl text-foreground">Akses Terkunci Admin</h3>
             <p class="text-xs text-secondary mt-1 mb-5 leading-relaxed">
-                Masukkan <strong>PIN Rahasia Admin / Superadmin</strong> untuk membuka Dashboard Monitoring & Riwayat Laporan.
+                Masukkan <strong>PIN Rahasia Admin / Superadmin</strong> untuk membuka Dashboard Monitoring & Riwayat
+                Laporan.
             </p>
 
             <form onsubmit="submitVerifikasiPin(event)" class="w-full flex flex-col gap-4">
@@ -659,7 +739,8 @@
                     </button>
                 </div>
 
-                <div id="error-pin-admin" class="hidden text-xs text-error font-semibold flex items-center justify-center gap-1">
+                <div id="error-pin-admin"
+                    class="hidden text-xs text-error font-semibold flex items-center justify-center gap-1">
                     <i data-lucide="alert-circle" class="size-3.5"></i>
                     <span id="error-pin-text">PIN Admin Salah! Silakan coba lagi.</span>
                 </div>
@@ -683,13 +764,14 @@
     <!-- MODAL 4: UBAH PIN RAHASIA ADMIN / SUPERADMIN                  -->
     <!-- ============================================================== -->
     <div id="modal-ubah-pin" class="fixed inset-0 bg-black/70 z-[120] hidden items-center justify-center p-4">
-        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
+        <div
+            class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl flex flex-col items-center relative overflow-hidden">
             <div class="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-purple-500 via-primary to-indigo-600"></div>
 
             <div class="size-16 bg-purple-100 rounded-2xl flex items-center justify-center mb-4 text-purple-600">
                 <i data-lucide="key-round" class="size-8"></i>
             </div>
-            
+
             <h3 class="font-bold text-xl text-foreground">Ubah PIN Admin</h3>
             <p class="text-xs text-secondary mt-1 mb-5 leading-relaxed">
                 PIN baru akan otomatis tersimpan di sheet <strong>Master_Admin</strong> dan berlaku secara langsung.
@@ -725,7 +807,8 @@
                     <span id="error-ubah-pin-text">Gagal memperbarui PIN!</span>
                 </div>
 
-                <div id="sukses-ubah-pin" class="hidden text-xs text-success font-semibold flex items-center gap-1 mt-1">
+                <div id="sukses-ubah-pin"
+                    class="hidden text-xs text-success font-semibold flex items-center gap-1 mt-1">
                     <i data-lucide="check-circle" class="size-3.5 shrink-0"></i>
                     <span id="sukses-ubah-pin-text">PIN Admin Berhasil Diperbarui!</span>
                 </div>
@@ -876,11 +959,11 @@
         function initDropdownUnitKerja() {
             const selectUnit = document.getElementById('select-unit');
             const filterUnit = document.getElementById('filter-unit');
-            
+
             const fillOptions = (orgMap) => {
                 const data = orgMap || MASTER_ORGANISASI;
                 if (!data) return;
-                
+
                 if (selectUnit && selectUnit.options.length <= 1) {
                     selectUnit.innerHTML = '<option value="">-- Pilih Unit Kerja --</option>';
                     Object.keys(data).forEach(unit => {
@@ -890,7 +973,7 @@
                         selectUnit.appendChild(opt);
                     });
                 }
-                
+
                 if (filterUnit && filterUnit.options.length <= 1) {
                     filterUnit.innerHTML = '<option value="ALL">Semua Unit Kerja</option>';
                     Object.keys(data).forEach(unit => {
@@ -993,17 +1076,18 @@
             if (res && res.success && res.found && res.data) {
                 const p = res.data;
                 if (p.nama) document.getElementById('input-nama').value = p.nama;
-                
+
                 if (p.unitKerja) {
                     const selectUnit = document.getElementById('select-unit');
                     selectUnit.value = p.unitKerja;
                     handleUnitChange();
                 }
-                
+
                 if (p.seksi) {
                     setTimeout(() => {
                         const selectSeksi = document.getElementById('select-seksi');
                         if (selectSeksi) selectSeksi.value = p.seksi;
+                        updateAtasanLangsung();
                     }, 50);
                 }
 
@@ -1025,28 +1109,40 @@
         function handleUnitChange() {
             const unit = document.getElementById('select-unit').value;
             const selectSeksi = document.getElementById('select-seksi');
-            const inputAtasan = document.getElementById('input-atasan');
             selectSeksi.innerHTML = '';
-
-            // Otomatisasi Atasan Langsung sesuai aturan unit kerja
-            if (inputAtasan) {
-                inputAtasan.value = unit ? (ATASAN_MAP[unit] || ('Kepala Bagian ' + unit)) : '-- Pilih Unit Kerja Terlebih Dahulu --';
-            }
 
             const orgData = window.ORGANISASI_DATA || MASTER_ORGANISASI;
 
             if (!unit || !orgData || !orgData[unit]) {
                 selectSeksi.innerHTML = '<option value="">-- Pilih Unit Kerja Terlebih Dahulu --</option>';
+                updateAtasanLangsung();
                 return;
             }
 
-            selectSeksi.innerHTML = '<option value="">-- Pilih Seksi / Jabatan --</option>';
+            selectSeksi.innerHTML = '<option value="">-- Pilih Seksi --</option>';
             orgData[unit].forEach(seksi => {
                 const opt = document.createElement('option');
                 opt.value = seksi;
                 opt.innerText = seksi;
                 selectSeksi.appendChild(opt);
             });
+
+            updateAtasanLangsung();
+        }
+
+        function handleSeksiChange() {
+            updateAtasanLangsung();
+        }
+
+        function handleLevelChange() {
+            updateAtasanLangsung();
+        }
+
+        function updateAtasanLangsung() {
+            const inputAtasan = document.getElementById('input-atasan');
+            if (inputAtasan) {
+                inputAtasan.value = 'Direktur Umum';
+            }
         }
 
         // Render Baris Sesi Jam Kegiatan
@@ -1061,7 +1157,7 @@
         function tambahBarisKegiatan(waktu = '', uraian = '', status = 'Selesai') {
             const container = document.getElementById('kegiatan-container');
             const rowCount = container.children.length + 1;
-            
+
             const row = document.createElement('div');
             row.className = 'kegiatan-row flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3.5 bg-muted/40 rounded-xl border border-border';
             row.innerHTML = `
@@ -1251,10 +1347,20 @@
                 return;
             }
 
+            const levelVal = document.getElementById('select-level') ? document.getElementById('select-level').value : 'STAF';
+            const levelMap = {
+                'STAF': 'Staf / Pelaksana',
+                'KASIE': 'Kepala Seksi',
+                'KABAG': 'Kepala Bagian / Kepala Wilayah'
+            };
+            const jabatanLabel = levelMap[levelVal] || 'Staf / Pelaksana';
+
             const payload = {
                 hariTanggal: hariTanggalStr,
                 nama: namaVal,
                 npp: nppVal,
+                level: levelVal,
+                jabatan: jabatanLabel,
                 unitKerja: unitVal,
                 seksi: seksiVal,
                 atasanLangsung: atasanVal,
@@ -1329,7 +1435,8 @@
             document.getElementById('laporan-form').reset();
             initDateAndClock();
             document.getElementById('select-seksi').innerHTML = '<option value="">-- Pilih Unit Kerja Terlebih Dahulu --</option>';
-            document.getElementById('input-atasan').value = '-- Pilih Unit Kerja Terlebih Dahulu --';
+            document.getElementById('input-atasan').value = 'Direktur Umum';
+            document.getElementById('input-direktur').value = 'Direktur Umum';
             const badge = document.getElementById('npp-status-badge');
             if (badge) badge.className = 'hidden';
             renderDefaultKegiatan();
@@ -1379,7 +1486,7 @@
             const errorBox = document.getElementById('error-pin-admin');
             if (errorBox) errorBox.classList.add('hidden');
             if (pinInput) pinInput.value = '';
-            
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             setTimeout(() => { if (pinInput) pinInput.focus(); }, 150);
@@ -1470,14 +1577,14 @@
             const modal = document.getElementById('modal-ubah-pin');
             const errBox = document.getElementById('error-ubah-pin');
             const sukBox = document.getElementById('sukses-ubah-pin');
-            
+
             if (errBox) errBox.classList.add('hidden');
             if (sukBox) sukBox.classList.add('hidden');
-            
+
             document.getElementById('input-pin-lama').value = '';
             document.getElementById('input-pin-baru').value = '';
             document.getElementById('input-pin-konfirmasi').value = '';
-            
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
             setTimeout(() => { document.getElementById('input-pin-lama').focus(); }, 150);
@@ -1495,7 +1602,7 @@
             const pinLama = document.getElementById('input-pin-lama').value.trim();
             const pinBaru = document.getElementById('input-pin-baru').value.trim();
             const pinKonf = document.getElementById('input-pin-konfirmasi').value.trim();
-            
+
             const errBox = document.getElementById('error-ubah-pin');
             const errText = document.getElementById('error-ubah-pin-text');
             const sukBox = document.getElementById('sukses-ubah-pin');
@@ -1669,7 +1776,7 @@
             data.forEach((item) => {
                 const urls = String(item.fotoUrl || '').split(/[\n,]/).filter(u => u.trim());
                 let fotoPreview = `<span class="text-xs text-secondary">-</span>`;
-                
+
                 if (urls.length === 1) {
                     fotoPreview = `<a href="${urls[0]}" target="_blank" class="inline-flex items-center gap-1 text-xs text-primary font-semibold hover:underline"><i data-lucide="image" class="size-3.5"></i> Lihat Foto</a>`;
                 } else if (urls.length > 1) {
@@ -1689,7 +1796,7 @@
                     </td>
                     <td class="py-3.5 px-4">
                         <span class="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-primary/10 text-primary mb-1">${item.unitKerja}</span>
-                        <p class="text-xs text-secondary font-medium">${item.seksi}</p>
+                        <p class="text-xs text-secondary font-medium">${item.seksi}${item.jabatan ? ' • ' + item.jabatan : ''}</p>
                     </td>
                     <td class="py-3.5 px-4 text-center">
                         ${fotoPreview}
@@ -1741,10 +1848,11 @@
             // Isi Elemen Header Dokumen
             document.getElementById('print-nama').innerText = data.nama;
             document.getElementById('print-npp').innerText = data.npp;
-            document.getElementById('print-jabatan').innerText = data.seksi;
+            document.getElementById('print-jabatan').innerText = data.jabatan || 'Staf / Pelaksana';
             document.getElementById('print-unit').innerText = data.unitKerja;
+            document.getElementById('print-seksi').innerText = data.seksi;
             document.getElementById('print-tanggal').innerText = data.hariTanggal;
-            document.getElementById('print-atasan').innerText = data.atasanLangsung || 'Sekretaris Direktur Umum';
+            document.getElementById('print-atasan').innerText = data.atasanLangsung || 'Direktur Umum';
             document.getElementById('print-direktur').innerText = data.direkturUmum || 'Direktur Umum';
 
             // Isi Rincian Kegiatan
@@ -1786,8 +1894,8 @@
             // Tanda Tangan
             document.getElementById('print-ttd-nama').innerText = `( ${data.nama} )`;
             document.getElementById('print-ttd-npp').innerText = `NPP: ${data.npp}`;
-            document.getElementById('print-ttd-atasan').innerText = data.atasanLangsung || 'Sekretaris Direktur Umum';
-            
+            document.getElementById('print-ttd-atasan').innerText = data.atasanLangsung || 'Direktur Umum';
+
             const tglSaja = String(data.hariTanggal).replace(/.*?, /, '');
             document.getElementById('print-lokasi-tgl').innerText = `Makassar, ${tglSaja}`;
 
@@ -1810,7 +1918,7 @@
             if (printWindow) {
                 const doc = printWindow.document;
                 doc.open();
-                
+
                 const title = doc.createElement('title');
                 title.text = 'Cetak Laporan Kegiatan Harian PERUMDA';
                 doc.head.appendChild(title);
@@ -1830,7 +1938,7 @@
 
                 doc.close();
 
-                setTimeout(function() {
+                setTimeout(function () {
                     try {
                         printWindow.focus();
                         printWindow.print();

@@ -13,37 +13,57 @@
  * 3. Sheet 'Master_Pegawai' (Data referensi pegawai)
  * 4. Folder khusus di Google Drive untuk menyimpan Foto Time Mark
  */
+const SPREADSHEET_ID = '1_h2oNUCUA80iunTYMXij889zSllm6a2zIZA4poWaUXM';
+
+function getSpreadsheetSafe() {
+  try {
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active && active.getId() === SPREADSHEET_ID) return active;
+  } catch (e) {}
+  
+  try {
+    return SpreadsheetApp.openById(SPREADSHEET_ID);
+  } catch (e) {
+    return SpreadsheetApp.getActiveSpreadsheet();
+  }
+}
+
 function inisialisasiSistem() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheetSafe();
   
   // 1. Buat / Ambil Sheet 'Laporan_Kegiatan'
   let sheetLaporan = ss.getSheetByName('Laporan_Kegiatan');
+  const OFFICIAL_HEADERS = [
+    'ID Laporan',
+    'Timestamp',
+    'Hari / Tanggal',
+    'Nama Pegawai',
+    'NPP',
+    'Jabatan',
+    'Unit Kerja',
+    'Seksi',
+    'Atasan Langsung',
+    'Direktur Umum',
+    'Rincian Kegiatan (JSON)',
+    'Foto Time Mark URL',
+    'Status Approval',
+    'Catatan Atasan'
+  ];
+
   if (!sheetLaporan) {
     sheetLaporan = ss.insertSheet('Laporan_Kegiatan');
-    const headers = [
-      'ID Laporan',
-      'Timestamp',
-      'Hari / Tanggal',
-      'Nama Pegawai',
-      'NPP',
-      'Unit Kerja',
-      'Seksi / Jabatan',
-      'Atasan Langsung',
-      'Direktur Umum',
-      'Rincian Kegiatan (JSON)',
-      'Foto Time Mark URL',
-      'Status Approval',
-      'Catatan Atasan'
-    ];
-    sheetLaporan.appendRow(headers);
-    
-    // Format Header
-    const headerRange = sheetLaporan.getRange(1, 1, 1, headers.length);
-    headerRange.setBackground('#165DFF');
-    headerRange.setFontColor('#FFFFFF');
-    headerRange.setFontWeight('bold');
-    sheetLaporan.setFrozenRows(1);
   }
+  
+  // Format & Perbaiki Header jika belum 14 kolom
+  const headerRange = sheetLaporan.getRange(1, 1, 1, OFFICIAL_HEADERS.length);
+  headerRange.setValues([OFFICIAL_HEADERS]);
+  headerRange.setBackground('#165DFF');
+  headerRange.setFontColor('#FFFFFF');
+  headerRange.setFontWeight('bold');
+  sheetLaporan.setFrozenRows(1);
+
+  // Perbaiki otomatis struktur data jika ada yang tergeser
+  perbaikiStrukturSemuaData();
   
   // 2. Buat / Ambil Sheet 'Master_Organisasi'
   let sheetOrg = ss.getSheetByName('Master_Organisasi');
@@ -273,4 +293,66 @@ function getOrCreateFotoFolder(unitKerja, nama, npp) {
   }
   
   return pegawaiFolder;
+}
+
+/**
+ * OTOMATIS MEMPERBAIKI BANNER HEADER (14 KOLOM RESMI) & STRUKTUR BARIS TERGESER
+ */
+function perbaikiStrukturSemuaData() {
+  try {
+    const ss = getSpreadsheetSafe();
+    const OFFICIAL_HEADERS = [
+      'ID Laporan', 'Timestamp', 'Hari / Tanggal', 'Nama Pegawai', 'NPP',
+      'Jabatan', 'Unit Kerja', 'Seksi', 'Atasan Langsung', 'Direktur Umum',
+      'Rincian Kegiatan (JSON)', 'Foto Time Mark URL', 'Status Approval', 'Catatan Atasan'
+    ];
+    
+    const sheets = ss.getSheets();
+    sheets.forEach(sheet => {
+      const name = sheet.getName();
+      if (name === 'Master_Organisasi' || name === 'Master_Pegawai' || name === 'Master_Admin') return;
+      
+      if (sheet.getLastRow() < 1) return;
+      
+      // Update Header (Baris 1) ke 14 Kolom Resmi
+      const hRange = sheet.getRange(1, 1, 1, OFFICIAL_HEADERS.length);
+      hRange.setValues([OFFICIAL_HEADERS]);
+      hRange.setBackground('#165DFF').setFontColor('#FFFFFF').setFontWeight('bold');
+      sheet.setFrozenRows(1);
+      
+      // Perbaiki Baris Data (Baris 2 ke bawah) Jika Menggunakan Format 13 Kolom Lama
+      if (sheet.getLastRow() > 1) {
+        const lastCol = Math.max(14, sheet.getLastColumn());
+        const range = sheet.getRange(2, 1, sheet.getLastRow() - 1, lastCol);
+        const values = range.getValues();
+        let modified = false;
+        
+        for (let i = 0; i < values.length; i++) {
+          const r = values[i];
+          if (!r[0]) continue;
+          
+          const valF = String(r[5] || '').trim();
+          const isUnitInColF = (
+            valF.indexOf('UMUM') !== -1 || valF.indexOf('SPI') !== -1 || valF.indexOf('SEKPER') !== -1 ||
+            valF.indexOf('PERLENGKAPAN') !== -1 || valF.indexOf('ANGGARAN') !== -1 || valF.indexOf('VERIFIKASI') !== -1 ||
+            valF.indexOf('PERENCANAAN') !== -1 || valF.indexOf('DISTRIBUSI') !== -1 || valF.indexOf('PRODUKSI') !== -1 ||
+            valF.indexOf('WILAYAH') !== -1
+          );
+          
+          if (isUnitInColF) {
+            // Sisipkan 'Staf / Pelaksana' pada Kolom F (index 5) agar bergeser rapi ke kanan
+            r.splice(5, 0, 'Staf / Pelaksana');
+            values[i] = r.slice(0, 14);
+            modified = true;
+          }
+        }
+        
+        if (modified) {
+          range.setValues(values);
+        }
+      }
+    });
+  } catch (err) {
+    Logger.log('Error perbaikiStrukturSemuaData: ' + err.toString());
+  }
 }
